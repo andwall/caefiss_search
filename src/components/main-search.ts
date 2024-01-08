@@ -1,10 +1,13 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { TextSearch } from "./text-search";
+import { SearchEvent } from "../model/model";
 
 
 @customElement('main-search')
 export class MainSearch extends LitElement{
+
+  @property({ type: Object }) searchEvent?   : SearchEvent;
 
   @property({ type: String }) entityName?    : string;
   @property({ type: String }) fieldName?     : string;
@@ -23,7 +26,7 @@ export class MainSearch extends LitElement{
 
       <!-- Currently padding props to text search for entity name and field name -->
       <div class="text-search-container">
-        <text-search entityName="V Number" fieldName="v_number" @text-search-changed=${ this._onTextSearchChanged }></text-search>
+        <text-search entityName="V Number" fieldName="v_number" @text-search-event=${ this._onTextSearchChanged }></text-search>
 
       </div>
       `
@@ -34,12 +37,23 @@ export class MainSearch extends LitElement{
     * TODO replace with a context manager
   */
   _onTextSearchChanged(event: Event) {
+    /* Getting via custom event */ 
+    const searchTextEvent = event as CustomEvent<SearchEvent>;
+    this.searchEvent = searchTextEvent.detail;
+    
+    //debugging purposes
+    this.textValue = searchTextEvent.detail.displayName;
+    console.log(this.searchEvent)
+    
+    /* Getting via properties */
     const target = event.target as TextSearch;
-    this.entityName = target.entityName;
-    this.fieldName = target.fieldName;
-    this.textValue = target.textValue;
-    this.criteriaValue = target.criteriaValue;
-    this.contextData = target.contextData;
-    console.log(this.entityName, this.fieldName, this.textValue, this.criteriaValue)
+    // this.entityName = target.entityName;
+    // this.fieldName = target.fieldName;
+    // this.textValue = target.textValue;
+    // this.criteriaValue = target.criteriaValue;
+    // this.contextData = target.contextData;
+
+    //Show results
+    // console.log(this.entityName, this.fieldName, this.textValue, this.criteriaValue);
   }
 }
