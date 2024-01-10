@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { TextSearch } from "./text-search";
+import { DateSearch } from "./date-search";
 import { SearchEvent } from "../model/model";
 
 
@@ -24,10 +25,12 @@ export class MainSearch extends LitElement{
     return html`
       <h1>${this.textValue}</h1>
 
-      <!-- Currently padding props to text search for entity name and field name -->
+      <!-- Currently passing props to text search for entity name and field name -->
       <div class="text-search-container">
-        <text-search entityName="V Number" fieldName="v_number" @text-search-event=${ this._onTextSearchChanged }></text-search>
+        <text-search entityName="V number" fieldName="V number" @text-search-event=${ this._onTextSearchChanged }></text-search>
 
+        <date-search @date-search-event=${ this._onDateSearchChanged } entityName="Time of Immunization" fieldName="Date of vaccine administration"></date-search>
+        
       </div>
       `
   }
@@ -55,5 +58,10 @@ export class MainSearch extends LitElement{
 
     //Show results
     // console.log(this.entityName, this.fieldName, this.textValue, this.criteriaValue);
+  }
+
+  _onDateSearchChanged(event: Event){
+    const dateEvent = event as CustomEvent;
+    console.log(dateEvent.detail)
   }
 }

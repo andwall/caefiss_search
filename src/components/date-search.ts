@@ -1,42 +1,39 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { Condition, Operation } from "../model/model";
 
-@customElement('text-search')
-export class TextSearch extends LitElement{
- 
-  /* Properties to be emitted */
-  //First two will be props?
-  @property({ type: String }) entityName?    : string; //i.e., case, vaccine, 
-  @property({ type: String }) fieldName?     : string; //i.e., vnumber, status
-  @property({ type: String }) displayName?   : string; //i.e., the value to replace
-  @property({ type: String }) criteriaValue? : string | Condition; // i.e., =,contains,begins,etc
-  @property({ type: String }) contextData?   : string | Operation; //just in case
+@customElement('date-search')
+export class DateSearch extends LitElement{
 
-  /*Used for styling purposes */
+  //Entity name
+  //Field name
+  //Date entered
+  //Criteria entered
+  //Context data
+  @property({ type: String }) entityName? : string;
+  @property({ type: String }) fieldName?  : string;
+  @property({ type: Date   }) date1?      : Date | string;
+  @property({ type: Date   }) date2?      : Date | string;
+  @property({ type: String }) criteria?   : string;
+  @property({ type: String }) context?    : string;
+
+  /* For styling */ 
   @property({ type: Boolean }) private isDropDownOpen?  : boolean;
   @property({ type: String })  private selectedItemKey? : number;
 
   /* Used for ui */
   private criterias: { id: string, name: string, icon: string }[];
 
-  /* Intialize criterias and ui options */
   constructor(){
     super();
-    this.isDropDownOpen = false;
     this.criterias = [
-      { id: "contains",      name: "contains",         icon: "&ni;"              },
-      { id: "equals",        name: "equals",           icon: "&equals;"          },
-      { id: "beginsWith",    name: "begins with",      icon: "A<sub>z</sub>..."  },
-      { id: "endsWith",      name: "ends with",        icon: "...A<sub>z</sub>"  },
-      { id: "isNull",        name: "is null",          icon: "&empty;"           },
-      { id: "fieldContains", name: "field contains",   icon: "&ni;<sub>f</sub>"  }
-    ];
-    this.selectedItemKey = 1;
-  
+      { id: "between", name: "between", icon: "&harr;" },
+      { id: "isNull",  name: "is null", icon: "&empty;"}
+    ]
+    this.selectedItemKey = 0;
+    this.criteria = this.criterias[0].id;
   }
- 
+
   static styles = css`
   *{
   margin: 0;
@@ -58,7 +55,14 @@ export class TextSearch extends LitElement{
     gap: 2px;
   }
 
-  input[type=text]{
+  .date-search-wrapper{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+  }
+
+  input[type=date]{
     width: 100%;
     padding: 6px;
     -webkit-transition: 0.15s;
@@ -69,7 +73,7 @@ export class TextSearch extends LitElement{
     box-shadow: 0 5px 15px rgba(0,0,0,0,0);  
   }
 
-  input[type=text]:focus {
+  input[type=date]:focus {
     border: 1px solid #66afe9;
     box-shadow: 0 0px 8px rgba(102,175,233,.45);
     outline: none;
@@ -99,7 +103,6 @@ export class TextSearch extends LitElement{
     box-shadow: 0 5px 10px rgba(0,0,0,0.15);
     display: none;
     position: absolute;
-    z-index: 10;
   }
 
   .dropdown-menu.open{
@@ -145,20 +148,17 @@ export class TextSearch extends LitElement{
   }
 
   `;
+
   render(){
-    return html` 
-   
-      <h3>${ this.fieldName }</h3>
+    return html`
+      <h3>${this.fieldName}</h3>
       <div class="container">
-        <!-- Dropdown --> 
+        <!-- DropDown -->
         <div class="dropdown-wrapper">
-          
-          <!-- Dropdown button -->
           <div @click=${ this._onDropDownClick } class="dropdown-btn">
-            <span id="selected-item" class="special-character">${this.selectedItemKey ? html `${unsafeHTML(this.criterias[this.selectedItemKey].icon)}` : html `&ni;` }</span>
+            <span id="selected-item" class="special-character">${this.selectedItemKey ? html `${unsafeHTML(this.criterias[this.selectedItemKey].icon)}` : html `&harr;` }</span>
             <span><i class="arrow down"></i></span>
           </div>
-
           <!-- Dropdown menu -->
           <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
             <!-- Generate all criteria fields -->
@@ -166,47 +166,40 @@ export class TextSearch extends LitElement{
               return html `<div key=${key} @click=${ this._onCriteriaClick } class="criteria" id=${criteria.id}><span class="special-character">${unsafeHTML(criteria.icon)}</span>${criteria.name}</div>`
             })}
           </div>
+        </div>
+        <!-- Date Search --> 
+        <div class="date-search-wrapper">
+            <input @input=${ this._onInput } type="date" class="input" id="date1"></input>
+            <span class="dash">-</span>
+            <input @input=${ this._onInput } type="date" class="input" id="date2"></input>
 
         </div>
-       
-        <!-- Text Search --> 
-        <input @input=${ this._onInput } type="text" class="input"></text>
       </div>
     `
   }
 
-  /* Responsible for setting text value property and emitting event */
-  _onInput(event: Event){
-    const target = event.target as HTMLInputElement;
-    this.displayName = target.value; 
-    this.contextData = this.displayName ? Operation.Change : Operation.Delete; //check if the value is empty
-    this._emitTextSearchChanged();
-  }
-  
-  /* Responsible for opening and closing dropdown */
+
   _onDropDownClick(){
     this.isDropDownOpen = !this.isDropDownOpen;
-  }
+  }  
   
   /* Responsible for updating dropdown button icon and setting criteria value property */
   _onCriteriaClick(e: Event){
     const clickedEl = e.target as HTMLElement;
     this.selectedItemKey = clickedEl.getAttribute('key') as unknown as number; //workaround for getting el key
-    this.criteriaValue = clickedEl.id;
+    this.criteria = clickedEl.id;
     this._onDropDownClick();
-    this._emitTextSearchChanged();
+    this._emitDateSearchChanged();
   }
- 
-  /* Responsible for emitting the text search changed event */
-  _emitTextSearchChanged(){
-    //TODO create cusotm event with details
-    let textSearchEvent = new CustomEvent('text-search-event', {
+
+  _emitDateSearchChanged(){
+    let textSearchEvent = new CustomEvent('date-search-event', {
       detail: {
         entityName: this.entityName,
         fieldName: this.fieldName,
-        displayName: this.displayName,
-        context: this.contextData,
-        condition: this.criteriaValue
+        displayName: this.date1 + " " + this.date2,
+        context: this.context,
+        condition: this.criteria
       },
       bubbles: true,
       composed: true
@@ -214,6 +207,12 @@ export class TextSearch extends LitElement{
     this.dispatchEvent(textSearchEvent);
   }
 
+  _onInput(event: Event){
+    const target = event.target as HTMLInputElement;
+    let date = target.value; 
+    this.context = date ? "change" : "delete"; //check if the value is empty
+
+    target.id === "date1" ? this.date1 = date : this.date2 = date;
+    this._emitDateSearchChanged();
+  }
 }
-
-
