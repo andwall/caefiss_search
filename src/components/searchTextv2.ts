@@ -190,7 +190,7 @@ export class TextSearch extends LitElement{
   .condition-wrapper{
     position: relative;
     font-size: 14px;
-    width: 60px;
+    width: fit-content;
   }
   
   select{
