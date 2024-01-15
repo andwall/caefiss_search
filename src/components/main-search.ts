@@ -1,8 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { TextSearch } from "./text-search";
-import { DateSearch } from "./date-search";
-import { SearchEvent } from "../model/model";
+import { SearchEvent } from "./SearchTypes";
+
 
 
 @customElement('main-search')
@@ -20,48 +19,72 @@ export class MainSearch extends LitElement{
     .text-search-container{
       width: 400px;
     }
+
+    .container{
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      width: 500px;
+    }
+
+    .multiple-search{
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      padding-top: 25px;
+    }
+
+    .search-text-v2{
+      width: 400px;
+      padding: 40px;
+    }
   `
   render(){
     return html`
       <h1>${this.textValue}</h1>
 
       <!-- Currently passing props to text search for entity name and field name -->
-      <div class="text-search-container">
-        <text-search entityName="V number" fieldName="V number" @text-search-event=${ this._onTextSearchChanged }></text-search>
+       <div>
+  
+        <div class="container">
+          <search-text displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent" @search-text-event=${this._onTextSearchChanged }></search-text>
 
-        <date-search @date-search-event=${ this._onDateSearchChanged } entityName="Time of Immunization" fieldName="Date of vaccine administration"></date-search>
+          <search-date @search-date-event=${ this._onDateSearchChanged } entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
+        </div>
+
+      <div class="multiple-search">
+
+        <!-- <search-text displayName="Andrew"></search-text>
+        <search-text displayName="Wallace"></search-text> -->
+
+        
+          <search-date @search-date-event=${ this._onDateSearchChanged } entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
+          <search-date @search-date-event=${ this._onDateSearchChanged } entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
+
+
+      </div>
+
+      <div class="search-text-v2">
+        
+          <search-text-v2 displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent" @search-text-event=${this._onTextSearchChanged }></search-text-v2>
+  </div>
+
         
       </div>
       `
   }
 
-  /* 
-    * Responsible for getting all values emitted from text search
-    * TODO replace with a context manager
-  */
   _onTextSearchChanged(event: Event) {
     /* Getting via custom event */ 
     const searchTextEvent = event as CustomEvent<SearchEvent>;
-    this.searchEvent = searchTextEvent.detail;
-    
-    //debugging purposes
-    this.textValue = searchTextEvent.detail.displayName;
+   this.searchEvent = searchTextEvent.detail; 
     console.log(this.searchEvent)
-    
-    /* Getting via properties */
-    const target = event.target as TextSearch;
-    // this.entityName = target.entityName;
-    // this.fieldName = target.fieldName;
-    // this.textValue = target.textValue;
-    // this.criteriaValue = target.criteriaValue;
-    // this.contextData = target.contextData;
-
-    //Show results
-    // console.log(this.entityName, this.fieldName, this.textValue, this.criteriaValue);
+    this.textValue = this.searchEvent.findText;
   }
 
   _onDateSearchChanged(event: Event){
     const dateEvent = event as CustomEvent;
     console.log(dateEvent.detail)
   }
+
 }

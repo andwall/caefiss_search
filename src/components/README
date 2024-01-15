@@ -1,0 +1,20 @@
+# Text Search
+
+## Text search v1
+- uses property binding to populate necessary event values
+- emits those values directly in the CustomEvent details with an additional field called "inputValue" that holds the actual value to query
+
+## Text search v2
+- uses the model "Search Event" to bind properties directly
+- emits the SearchEvent object in the CustomEvent, with an additional field called "inputValue"
+
+## Text search v3
+- uses a combination of property binding and SearchEvent model
+- accepts property bindings like in v1, but then assigns those values to a SearchEvent type that is placed in the details of the CustomEvent. 
+- the input data is passed as a separate field in the details of CustomEvent
+
+## Thoughts
+- I think v3 is the cleanest solutions because: 
+
+1. Property binding is clear
+2. Don't have to extra checking for context and condition to see if they were binded correctly
