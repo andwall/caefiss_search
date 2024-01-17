@@ -1,39 +1,45 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { Condition, Operation } from "../model/model";
+import { SearchEvent, Condition, Operation } from "../model/model";
 
-@customElement('text-search')
+@customElement('text-search-v2')
 export class TextSearch extends LitElement{
  
   /* Properties to be emitted */
-  @property({ type: String }) parentEntityName : string = "";
-  @property({ type: String }) entityName       : string = ""; 
-  @property({ type: String }) fieldName        : string = "";   
-  @property({ type: String }) displayName      : string = "";
-  @property({ type: String }) criteriaValue    : string | Condition = Condition.Equal;
-  @property({ type: String }) contextData      : string | Operation = Operation.Change;
-  inputValue: string = "";
+  @property({ type: Object }) searchEvent: SearchEvent = {
+    parentEntityName: "",
+    entityName: "",
+    fieldName: "",
+    displayName: "",
+    context: Operation.Change,
+    condition: Condition.Equal
+  } as SearchEvent;  
+  /* Text value to be passed */
+  inputData : string = ""; 
 
   /*Used for styling purposes */
   @property({ type: Boolean }) private isDropDownOpen?  : boolean;
   @property({ type: String })  private criteriaKey : number;
-  private criterias: { id: string, name: string, icon: string }[];
+
+  /* Used for ui */
+  private criterias: { id: string, name: string, icon: string, condition: Condition }[];
 
   /* Intialize criterias and ui options */
   constructor(){
     super();
+ 
     this.isDropDownOpen = false;
     this.criterias = [
-      { id: "equals",        name: "equals",           icon: "&equals;"          },
-      { id: "contains",      name: "contains",         icon: "&ni;"              },
-      { id: "beginsWith",    name: "begins with",      icon: "A<sub>z</sub>..."  },
-      { id: "endsWith",      name: "ends with",        icon: "...A<sub>z</sub>"  },
-      { id: "isNull",        name: "is null",          icon: "&empty;"           },
-      { id: "fieldContains", name: "field contains",   icon: "&ni;<sub>f</sub>"  }
+      { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
+      { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains },
+      { id: "beginsWith", name: "begins with", icon: "A<sub>z</sub>...", condition: Condition.On },
+      { id: "endsWith", name: "ends with", icon: "...A<sub>z</sub>", condition: Condition.After  },
+      { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
+      { id: "fieldContains", name: "field contains", icon: "&ni;<sub>f</sub", condition: Condition.Contains }
     ];
     this.criteriaKey = 0;
-  
+
   }
  
   static styles = css`
@@ -147,14 +153,14 @@ export class TextSearch extends LitElement{
   render(){
     return html` 
    
-      <h3>${ this.displayName }</h3>
+      <h3>${ this.searchEvent.displayName ?  this.searchEvent.displayName : " " }</h3>
       <div class="container">
         <!-- Dropdown --> 
         <div class="dropdown-wrapper">
           
           <!-- Dropdown button -->
           <div @click=${ this._onDropDownClick } class="dropdown-btn">
-            <span id="selected-item" class="special-character">${this.criteriaKey ? html `${unsafeHTML(this.criterias[this.criteriaKey].icon)}` : html `&ni;` }</span>
+            <span id="selected-item" class="special-character">${html `${unsafeHTML(this.criterias[this.criteriaKey].icon)}`}</span>
             <span><i class="arrow down"></i></span>
           </div>
 
@@ -177,8 +183,7 @@ export class TextSearch extends LitElement{
   /* Responsible for setting text value property and emitting event */
   _onInput(event: Event){
     const target = event.target as HTMLInputElement;
-    this.inputValue = target.value; 
-    this.contextData = this.inputValue ? Operation.Change : Operation.Delete; //check if the value is empty
+    this.inputData = target.value; 
     this._emitTextSearchChanged();
   }
   
@@ -191,22 +196,21 @@ export class TextSearch extends LitElement{
   _onCriteriaClick(e: Event){
     const clickedEl = e.target as HTMLElement;
     this.criteriaKey = clickedEl.getAttribute('key') as unknown as number; //workaround for getting el key
-    this.criteriaValue = clickedEl.id;
+    this.searchEvent.condition = this.criterias[this.criteriaKey].condition;
     this._onDropDownClick();
     this._emitTextSearchChanged();
   }
- 
+  
   /* Responsible for emitting the text search changed event */
   _emitTextSearchChanged(){
-    //TODO create cusotm event with details
+    
+    this.searchEvent.context = this.inputData ? Operation.Change : Operation.Delete; //check if the value is empty
+    this.searchEvent.condition = this.searchEvent.condition ? this.searchEvent.condition : this.criterias[this.criteriaKey].condition;
+
     let textSearchEvent = new CustomEvent('text-search-event', {
       detail: {
-        entityName: this.entityName,
-        fieldName: this.fieldName,
-        displayName: this.displayName,
-        context: this.contextData,
-        condition: this.criteriaValue,
-        inputValue: this.inputValue
+        searchEvent: this.searchEvent,
+        inputData: this.inputData
       },
       bubbles: true,
       composed: true

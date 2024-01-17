@@ -7,13 +7,15 @@
     <title>CCAEFISS Search</title>
     <link rel="stylesheet" href="./src/index.css" />
     <script type="module" src="/src/components/main-search.ts"></script>
-    <script type="module" src="/src/components/text-search.ts"></script>
-    <script type="module" src="/src/components/date-search.ts"></script>
+    <script type="module" src="/src/components/searchText.ts"></script>
+    <script type="module" src="/src/components/searchDate.ts"></script>
+    <script type="module" src="/src/components/searchTextv2.ts"></script>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
     <div class="app">
       <h1>CCAEFISS Search</h1>
+          <search-text displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
       <main-search></main-search>
     </div>
   </body>
