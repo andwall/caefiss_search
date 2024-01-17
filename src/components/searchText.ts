@@ -1,10 +1,10 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, eventOptions, property, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { Condition, Operation, SearchEvent } from "./SearchTypes";
 
 @customElement('search-text')
-export class TextSearch extends LitElement{
+export class TextSearch extends LitElement {
  
   @property()
   entityName: string = '';
@@ -37,7 +37,8 @@ export class TextSearch extends LitElement{
   condition: Condition = Condition.Equal;
   
   /*Used for styling purposes */
-  @property({attribute: false}) private isDropDownOpen: boolean = false;
+  @property() private isDropDownOpen: boolean = false;
+
   @property({attribute: false}) private criteriaKey: number = 0;
   @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
   private criterias: { id: string, name: string, icon: string, condition: Condition }[] = [
@@ -255,6 +256,25 @@ export class TextSearch extends LitElement{
   }
   `;
 
+
+  connectedCallback(): void {
+    super.connectedCallback();
+      window.addEventListener('click', (event) => {
+
+      let currEl = event.target as HTMLElement;
+      console.log(currEl.nodeName)
+      if(currEl.nodeName === 'SEARCH-TEXT' && this.isDropDownOpen){
+        console.log("working")
+        this.isDropDownOpen = !this.isDropDownOpen; 
+      }  
+    });
+  }
+
+  // disconnectedCallback(): void {
+  //   super.disconnectedCallback();
+  //   removeEventListener('click', this._handleClickAway);
+  // }
+
   _changeMessage(event: Event){
     const input = event.target as HTMLInputElement;
     this.findText = input.value; 
@@ -297,16 +317,20 @@ export class TextSearch extends LitElement{
     this.isDropDownOpen = !this.isDropDownOpen;
   }
 
-  _handleClickAway(event: Event){
-    let currEl = event.target as HTMLElement;
-    if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
-      this._toggleDropDown();
-    } 
-  }
+  // _handleClickAway(event: Event){
+
+  //   let currEl = event.target as HTMLElement;
+  //   if(!(this.dropDownContainer?.contains(currEl)) || this.isDropDownOpen){
+  //     console.log("working")
+  //     this.isDropDownOpen = !this.isDropDownOpen; 
+  //   }  
+    
+  // }
+
 
   override render(){
     return html` 
-      <div id="main-content" @click=${ this._handleClickAway }> 
+      <div id="main-content"> 
       
         <div class="display-name-container">
           <!-- Custom Checkbox -->
@@ -321,7 +345,7 @@ export class TextSearch extends LitElement{
           <div class="dropdown-wrapper">
 
             <!-- Dropdown button -->
-            <div @click=${ this._toggleDropDown } class="dropdown-btn" id="criteria-btn">
+            <div  class="dropdown-btn" id="criteria-btn">
               <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.criterias[this.criteriaKey].icon)}` }</span>
               <span><i class="arrow down"></i></span>
             </div>

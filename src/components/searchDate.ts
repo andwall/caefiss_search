@@ -49,7 +49,7 @@ export class DateSearch extends LitElement{
 
   /* For styling */ 
   @property({ type: Boolean }) private isDropDownOpen: boolean = false;
-  @property({ type: String })  private criteriaKey: number = 0;
+  @property({ type: Number })  private criteriaKey: number = 0;
   @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
   private criterias: { id: string, name: string, icon: string, condition: Condition }[];
 
@@ -190,7 +190,7 @@ export class DateSearch extends LitElement{
 
   _changeCondition(event: Event){
     const clickedEl = event.target as HTMLElement;
-    this.criteriaKey = Number(clickedEl.getAttribute('key'))
+    this.criteriaKey = Number(clickedEl.id)
     this.condition = this.criterias[this.criteriaKey].condition;
     this._toggleDropDown();
     this._dispatchMyEvent();
@@ -205,6 +205,14 @@ export class DateSearch extends LitElement{
     }else if(this.date1 && this.date2){
       findText = this.date1 + " " + this.date2;
     }
+<<<<<<< Updated upstream
+=======
+    return findText;
+  }
+
+  _dispatchMyEvent(){
+    let findText = this._generateFindText();
+>>>>>>> Stashed changes
 
     let evt: SearchEvent = {
       entityName: this.entityName,
@@ -261,11 +269,36 @@ export class DateSearch extends LitElement{
           </div>
         </div>
 
+<<<<<<< Updated upstream
         <!-- Date Search --> 
         <div class="date-search-wrapper">
             <input @input=${ this._changeDate } type="date" class="input" id="date1"></input>
             <span class="dash">-</span>
             <input @input=${ this._changeDate } type="date" class="input" id="date2"></input>
+=======
+          <!-- DropDown -->
+          <div class="dropdown-wrapper">
+            <div @click=${ this._toggleDropDown } class="dropdown-btn">
+              <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.criterias[this.criteriaKey].icon)}` }</span>
+              <span><i class="arrow down"></i></span>
+            </div>
+
+            <!-- Dropdown menu -->
+            <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
+              <!-- Generate all criteria fields -->
+              ${this.criterias?.map((criteria, key) => {
+                return html `<div @click=${ this._changeCondition } class="criteria" id=${key}><span class="special-character">${unsafeHTML(criteria.icon)}</span>${criteria.name}</div>`
+              })}
+            </div>
+          </div>
+
+          <!-- Date Search --> 
+          <div class="date-search-wrapper">
+              <input @change=${ this._changeDate } type="date" class="input" id="date1"></input>
+              <span class="dash">-</span>
+              <input @change=${ this._changeDate } type="date" class="input" id="date2"></input>
+          </div>
+>>>>>>> Stashed changes
         </div>
       </div>
     </div>
