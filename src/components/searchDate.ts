@@ -196,7 +196,7 @@ export class DateSearch extends LitElement{
     this._dispatchMyEvent();
   }
 
-  _dispatchMyEvent(){
+  _generateFindText(){
     let findText = '';
     if(this.date1 && !this.date2){
       findText = this.date1.toString();
@@ -205,14 +205,11 @@ export class DateSearch extends LitElement{
     }else if(this.date1 && this.date2){
       findText = this.date1 + " " + this.date2;
     }
-<<<<<<< Updated upstream
-=======
     return findText;
   }
 
   _dispatchMyEvent(){
     let findText = this._generateFindText();
->>>>>>> Stashed changes
 
     let evt: SearchEvent = {
       entityName: this.entityName,
@@ -269,13 +266,6 @@ export class DateSearch extends LitElement{
           </div>
         </div>
 
-<<<<<<< Updated upstream
-        <!-- Date Search --> 
-        <div class="date-search-wrapper">
-            <input @input=${ this._changeDate } type="date" class="input" id="date1"></input>
-            <span class="dash">-</span>
-            <input @input=${ this._changeDate } type="date" class="input" id="date2"></input>
-=======
           <!-- DropDown -->
           <div class="dropdown-wrapper">
             <div @click=${ this._toggleDropDown } class="dropdown-btn">
@@ -298,7 +288,6 @@ export class DateSearch extends LitElement{
               <span class="dash">-</span>
               <input @change=${ this._changeDate } type="date" class="input" id="date2"></input>
           </div>
->>>>>>> Stashed changes
         </div>
       </div>
     </div>
