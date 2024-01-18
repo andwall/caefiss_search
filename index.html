@@ -15,8 +15,19 @@
   <body>
     <div class="app">
       <h1>CCAEFISS Search</h1>
-          <search-text displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
+      <h2 id="showText"></h2>
+          <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
       <main-search></main-search>
     </div>
+
+    <script type="text/javascript">
+      let vNum = document.getElementById('vNumber');
+      let showText = document.getElementById('showText');
+      vNum.addEventListener('search-text-event', (e) =>{
+        console.log(e.detail)
+        showText.innerHTML = e.detail.displayName;
+      })
+
+    </script>
   </body>
 </html>
