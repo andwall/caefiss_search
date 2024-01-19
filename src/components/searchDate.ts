@@ -33,7 +33,7 @@ export class DateSearch extends LitElement{
   context: string = '';
 
   @property({attribute: false})
-  operation: Operation = Operation.Change;
+  operation: Operation = Operation.Delete;
 
   @property({attribute: false})
   findText: string = '';
@@ -81,6 +81,103 @@ export class DateSearch extends LitElement{
   .container{
     display: flex;
     gap: 2px;
+  }
+  
+  .display-name-container{
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .checkbox-container{
+    padding-top: 0.5em;
+  }
+
+  /* Custom checkbox styling */
+  [type="checkbox"]:not(:checked),
+  [type="checkbox"]:checked {
+    position: absolute;
+    left: -9999px;
+  }
+
+  [type="checkbox"]:not(:checked) + label,
+  [type="checkbox"]:checked + label {
+    position: relative;
+    padding-left: 1em;
+    cursor: pointer;
+  }
+
+  /* checkbox aspect */
+  [type="checkbox"]:not(:checked) + label:before{
+    content: '';
+    position: absolute;
+    left: 0; top: 0;
+    width: 0.65em; height: 0.65em;
+    border: 3px solid #1e1e1e;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+  }
+
+  [type="checkbox"]:checked + label:before{
+    content: '';
+    position: absolute;
+    left: 0; top: 0;
+    width: 0.65em; height: 0.65em;
+    border: 3px solid green;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+  } 
+   
+  /* checked mark aspect */
+  [type="checkbox"]:not(:checked) + label:after,
+  [type="checkbox"]:checked + label:after {
+    content: '✔';
+    // content: '✓';
+    position: absolute;
+    top: 0.1em; left: 0.215em;
+    font-size: 0.9em;
+    line-height: 0.8;
+    color: green;
+    transition: all .2s ease-in-out;
+  }
+
+  /* checked mark aspect changes */
+  [type="checkbox"]:not(:checked) + label:after {
+    opacity: 0;
+    transform: scale(0);
+  }
+
+  [type="checkbox"]:checked + label:after {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* disabled checkbox */
+  [type="checkbox"]:disabled:not(:checked) + label:before,
+  [type="checkbox"]:disabled:checked + label:before {
+    box-shadow: none;
+    border-color: #bbb;
+    background-color: #ddd;
+  }
+
+  [type="checkbox"]:disabled:checked + label:after {
+    color: #999;
+  }
+
+  [type="checkbox"]:disabled + label {
+    color: #aaa;
+  }
+
+  /* accessibility */
+  [type="checkbox"]:not(:checked):focus + label:before {
+    border: 3px solid #0535d2;
+  }
+
+  /* hover style just for information */
+  label:hover:before {
+    border: 3px solid #0535d2!important;
   }
 
   .date-search-wrapper{
@@ -183,8 +280,7 @@ export class DateSearch extends LitElement{
     const target = event.target as HTMLInputElement;
     let date = target.value as unknown as Date; 
     target.id === "date1" ? this.date1 = date : this.date2 = date;
-  
-    this.operation = this.date1 || this.date2 ?  Operation.Change : Operation.Delete; //check if the value is empty
+    this.operation = this.date1 || this.date2 ? Operation.Change : Operation.Delete; //check if the value is empty
     this._dispatchMyEvent();
   }
 
@@ -193,11 +289,13 @@ export class DateSearch extends LitElement{
     this.criteriaKey = Number(clickedEl.id)
     this.condition = this.criterias[this.criteriaKey].condition;
     this._toggleDropDown();
-    this._dispatchMyEvent();
+
+    if(this.operation === Operation.Change)
+      this._dispatchMyEvent();
   }
 
   _generateFindText(){
-    let findText = '';
+    let findText = "";
     if(this.date1 && !this.date2){
       findText = this.date1.toString();
     }else if(!this.date1 && this.date2){
@@ -245,26 +343,17 @@ export class DateSearch extends LitElement{
   
   override render(){
     return html`
-
       <div id="main-content" @click= ${ this._handleClickAway }>
-      <h3>${this.displayName}</h3>
-      <div class="container">
-
-        <!-- DropDown -->
-        <div class="dropdown-wrapper">
-          <div @click=${ this._toggleDropDown } class="dropdown-btn">
-            <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.criterias[this.criteriaKey].icon)}` }</span>
-            <span><i class="arrow down"></i></span>
+        <div class="display-name-container">
+          <!-- Custom Checkbox -->
+          <div class="checkbox-container">
+            <input type="checkbox" id="checkbox" />
+            <label for="checkbox"></label>
           </div>
-
-          <!-- Dropdown menu -->
-          <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
-            <!-- Generate all criteria fields -->
-            ${this.criterias?.map((criteria, key) => {
-              return html `<div key=${key} @click=${ this._changeCondition } class="criteria" id=${criteria.id}><span class="special-character">${unsafeHTML(criteria.icon)}</span>${criteria.name}</div>`
-            })}
-          </div>
+            <h3>${ this.displayName }</h3>
         </div>
+      
+        <div class="container">
 
           <!-- DropDown -->
           <div class="dropdown-wrapper">
@@ -290,7 +379,6 @@ export class DateSearch extends LitElement{
           </div>
         </div>
       </div>
-    </div>
     `;
   }
 }

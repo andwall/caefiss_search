@@ -38,9 +38,9 @@ export class TextSearch extends LitElement {
   
   /*Used for styling purposes */
   @property({attribute: false}) private isDropDownOpen: boolean = false;
-  @property({attribute: false}) private criteriaKey: number = 0;
+  @property({attribute: false}) private conditionKey: number = 0;
   @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
-  private criterias: { id: string, name: string, icon: string, condition: Condition }[] = [
+  private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
     { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains },      
@@ -216,13 +216,13 @@ export class TextSearch extends LitElement {
     display: block;
   }
 
-  .dropdown-menu .criteria{
+  .dropdown-menu .condition{
     padding: 6px 10px;
     cursor: pointer;
     border-radius: 5px;
   }
 
-  .dropdown-menu .criteria:hover{
+  .dropdown-menu .condition:hover{
     background-color: #1967d2;
   }
 
@@ -230,7 +230,7 @@ export class TextSearch extends LitElement {
     padding-right: 5px;
   }
 
-  .criteria, .special-character{
+  .condition, .special-character{
     color: white;
     font-size: 14px;
   }
@@ -255,26 +255,20 @@ export class TextSearch extends LitElement {
   }
   `;
 
-  connectedCallback(): void {
+  /** 
+   * Function: connectedCallback
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close condition drop down
+   * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+  */
+  override connectedCallback(): void {
     super.connectedCallback();
-    /** 
-     * Overview: Listening to events in "master DOM" 
-     * Note: only works if direct parent is the DOM model as its listening on window and needs es6 arrow function
-     * Purpose: handles click away event to close the drop down menu (condition)
-    */
-    window.addEventListener('click', (event) => {
-      let currEl = event.target as HTMLElement;
-      if(!(currEl.nodeName === 'SEARCH-TEXT') && this.isDropDownOpen){
-        this._toggleDropDown();
-      }  
-    });
+    window.addEventListener('click', e => this._globalClickAway(e));
   }
 
-  /* NEED TO CHECK FOR MEMORY LEAK FOR EVENT LISTENER*/
-  // disconnectedCallback(): void {
-  //   super.disconnectedCallback();
-  //   removeEventListener('click', this._handleClickAway);
-  // }
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener('click', this._globalClickAway);
+  }
 
   _changeMessage(event: Event){
     const input = event.target as HTMLInputElement;
@@ -285,14 +279,14 @@ export class TextSearch extends LitElement {
   
   _changeCondition(e: Event){
     const clickedEl = e.target as HTMLElement;
-    this.criteriaKey = Number(clickedEl.id); //getting element's id instead of key
-    this.condition = this.criterias[this.criteriaKey].condition;
+    this.conditionKey = Number(clickedEl.id); //getting element's id instead of key
+    this.condition = this.conditions[this.conditionKey].condition;
     this._toggleDropDown();
-
+    
     if(this.findText)
       this._dispatchMyEvent();
   }
-  
+
   _dispatchMyEvent(){
     let evt: SearchEvent = {
       entityName: this.entityName,
@@ -306,61 +300,65 @@ export class TextSearch extends LitElement {
       operation: this.operation,
       context: ''
     };
-
+    
     let searchChangeEvent = new CustomEvent('search-text-event', {
       detail: evt,
       bubbles: true,
-      composed: true });
+      composed: true 
+    });
     this.dispatchEvent(searchChangeEvent);
   }
-
+  
   _toggleDropDown(){
     this.isDropDownOpen = !this.isDropDownOpen;
   }
-
-  /* Used to handle click away on this element (searchText) */
-  _handleClickAway(event: Event){
+    
+  /* Used to handle click away event on this element (searchText) */
+  _localClickAway(event: Event){
     let currEl = event.target as HTMLElement;
     if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
       this._toggleDropDown();
     }  
   }
 
-  /* Note: 3 event handlers for click away on condition dropdown: 1) condition click, 2) element click (searchText), 3) parent DOM (window) */
+  /* Used to handle click away on window - used in connected callback*/
+  _globalClickAway(event: Event){
+    let currEl = event.target as HTMLElement;
+    if(!(currEl.nodeName === 'SEARCH-TEXT') && this.isDropDownOpen){
+      this._toggleDropDown();
+    }
+  }
+    
   override render(){
     return html` 
-      <div id="main-content" @click=${this._handleClickAway}> 
-      
-        <div class="display-name-container">
-          <!-- Custom Checkbox -->
-          <div class="checkbox-container">
-            <input type="checkbox" id="checkbox" />
-            <label for="checkbox"></label>
-          </div>
-            <h3>${ this.displayName }</h3>
+    <div id="main-content" @click=${this._localClickAway}>  
+      <div class="display-name-container">
+
+        <!-- Custom Checkbox -->
+        <div class="checkbox-container">
+          <input type="checkbox" id="checkbox" />
+          <label for="checkbox"></label>
         </div>
-
-        <div class="container">
-          <div class="dropdown-wrapper">
-
-            <!-- Dropdown button -->
-            <div @click=${this._toggleDropDown}  class="dropdown-btn" id="criteria-btn">
-              <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.criterias[this.criteriaKey].icon)}` }</span>
-              <span><i class="arrow down"></i></span>
-            </div>
-
-            <!-- Dropdown menu -->
-            <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
-              ${this.criterias?.map((criteria, key) => {
-                return html `<div @click=${ this._changeCondition } class="criteria" id=${key}><span class="special-character">${unsafeHTML(criteria.icon)}</span>${criteria.name}</div>`
-              })}
-            </div>
-          </div>
-          
-          <!-- Text Search --> 
-          <input @change=${ this._changeMessage } type="text" class="input"></text>
-        </div>
+          <h3>${this.displayName}</h3>
       </div>
-    `
+        
+      <div class="container">
+        <div class="dropdown-wrapper">
+            
+          <div @click=${this._toggleDropDown}  class="dropdown-btn" id="condition-btn">
+            <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.conditions[this.conditionKey].icon)}` }</span>
+            <span><i class="arrow down"></i></span>
+          </div>
+
+          <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
+            ${this.conditions?.map((condition, key) => {
+              return html `<div @click=${this._changeCondition} class="condition" id=${key}><span class="special-character">${unsafeHTML(condition.icon)}</span>${condition.name}</div>`
+            })}
+          </div>
+        </div>
+        
+        <input @change=${this._changeMessage} type="text" class="input"></text>
+      </div>
+    </div>`;
   }
 }

@@ -17,8 +17,10 @@
       <h1>CCAEFISS Search</h1>
       <h2 id="showText"></h2>
           <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
-      <main-search></main-search>
+          
+          <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
     </div>
+
 
     <script type="text/javascript">
       let vNum = document.getElementById('vNumber');
@@ -26,6 +28,11 @@
       vNum.addEventListener('search-text-event', (e) =>{
         console.log(e.detail)
         showText.innerHTML = e.detail.displayName;
+      })
+
+      let searchDate = document.getElementById('searchDate');
+      searchDate.addEventListener('search-date-event', (e) =>{
+        console.log(e.detail)
       })
 
     </script>
