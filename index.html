@@ -9,7 +9,7 @@
     <script type="module" src="/src/components/main-search.ts"></script>
     <script type="module" src="/src/components/searchText.ts"></script>
     <script type="module" src="/src/components/searchDate.ts"></script>
-    <script type="module" src="/src/components/searchTextv2.ts"></script>
+    <script type="module" src="/src/components/searchLookup.ts"></script>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
@@ -19,6 +19,11 @@
           <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
           
           <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
+        <div style="padding-top: 25px; width: 444px;">
+
+          <search-lookup id="searchLookup" entityName="searchLookup" fieldName="Search Lookup" displayName="Search Lookup"></search-lookup>
+
+        </div>
     </div>
 
 
@@ -32,6 +37,11 @@
 
       let searchDate = document.getElementById('searchDate');
       searchDate.addEventListener('search-date-event', (e) =>{
+        console.log(e.detail)
+      })
+
+      let searchLookup = document.getElementById('searchLookup');
+      searchLookup.addEventListener('search-lookup-event', (e) => {
         console.log(e.detail)
       })
 

@@ -55,15 +55,7 @@ export class TextSearch extends LitElement {
   padding: 0;
   box-sizing: border-box;
   font-family: inherit;
-  }
-
-  body{
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+  } 
 
   .container{
     display: flex;
