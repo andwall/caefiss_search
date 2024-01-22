@@ -47,20 +47,17 @@ export class DateSearch extends LitElement{
   @property({attribute: false})
   private date2?: Date;
 
+  private COMPONENT_NAME = "SEARCH-DATE";
+
   /* For styling */ 
   @property({ type: Boolean }) private isDropDownOpen: boolean = false;
-  @property({ type: Number })  private criteriaKey: number = 0;
+  @property({ type: Number })  private conditionKey: number = 0;
   @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
-  private criterias: { id: string, name: string, icon: string, condition: Condition }[];
-
-  constructor(){
-    super();
-    this.criterias = [
-      { id: "on", name: "on", icon: "&#9737;", condition: Condition.On },
-      { id: "between", name: "between", icon: "&harr;", condition: Condition.Between },
-      { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
-    ]
-  }
+  private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
+    { id: "on", name: "on", icon: "&#9737;", condition: Condition.On },
+    { id: "between", name: "between", icon: "&harr;", condition: Condition.Between },
+    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
+  ];
 
   static override styles = css`
   *{
@@ -68,15 +65,7 @@ export class DateSearch extends LitElement{
   padding: 0;
   box-sizing: border-box;
   font-family: inherit;
-  }
-
-  body{
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+  } 
 
   .container{
     display: flex;
@@ -229,20 +218,20 @@ export class DateSearch extends LitElement{
     box-shadow: 0 5px 10px rgba(0,0,0,0.15);
     display: none;
     position: absolute;
-    z-index: 1;
+    z-index: 10;
   }
 
   .dropdown-menu.open{
     display: block;
   }
 
-  .dropdown-menu .criteria{
+  .dropdown-menu .condition{
     padding: 6px 10px;
     cursor: pointer;
     border-radius: 5px;
   }
 
-  .dropdown-menu .criteria:hover{
+  .dropdown-menu .condition:hover{
     background-color: #1967d2;
   }
 
@@ -250,7 +239,7 @@ export class DateSearch extends LitElement{
     padding-right: 5px;
   }
 
-  .criteria, .special-character{
+  .condition, .special-character{
     color: white;
     font-size: 14px;
   }
@@ -274,7 +263,22 @@ export class DateSearch extends LitElement{
     -webkit-transform: rotate(45deg);
   }
   
-  `;
+  `; 
+
+   /** 
+   * Function: connectedCallback
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close condition drop down
+   * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+  */
+  override connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener('click', e => this._globalClickAway(e));
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+     window.removeEventListener('click', this._globalClickAway);
+  }
   
   _changeDate(event: Event){
     const target = event.target as HTMLInputElement;
@@ -286,8 +290,8 @@ export class DateSearch extends LitElement{
 
   _changeCondition(event: Event){
     const clickedEl = event.target as HTMLElement;
-    this.criteriaKey = Number(clickedEl.id)
-    this.condition = this.criterias[this.criteriaKey].condition;
+    this.conditionKey = Number(clickedEl.id)
+    this.condition = this.conditions[this.conditionKey].condition;
     this._toggleDropDown();
 
     if(this.operation === Operation.Change)
@@ -339,11 +343,27 @@ export class DateSearch extends LitElement{
     if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
       this._toggleDropDown();
     } 
-  }
+  } 
   
+  /* Used to handle click away event on this element (searchText) */
+  _localClickAway(event: Event){
+    let currEl = event.target as HTMLElement;
+    if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
+      this._toggleDropDown();
+    }  
+  }
+
+  /* Used to handle click away on window - used in connected callback*/
+  _globalClickAway(event: Event){
+    let currEl = event.target as HTMLElement;
+    if(!(currEl.nodeName === this.COMPONENT_NAME) && this.isDropDownOpen){
+      this._toggleDropDown();
+    }
+  }
+    
   override render(){
     return html`
-      <div id="main-content" @click= ${ this._handleClickAway }>
+      <div id="main-content" @click= ${ this._localClickAway }>
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
@@ -358,15 +378,15 @@ export class DateSearch extends LitElement{
           <!-- DropDown -->
           <div class="dropdown-wrapper">
             <div @click=${ this._toggleDropDown } class="dropdown-btn">
-              <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.criterias[this.criteriaKey].icon)}` }</span>
+              <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.conditions[this.conditionKey].icon)}` }</span>
               <span><i class="arrow down"></i></span>
             </div>
 
             <!-- Dropdown menu -->
             <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
-              <!-- Generate all criteria fields -->
-              ${this.criterias?.map((criteria, key) => {
-                return html `<div @click=${ this._changeCondition } class="criteria" id=${key}><span class="special-character">${unsafeHTML(criteria.icon)}</span>${criteria.name}</div>`
+              <!-- Generate all condition fields -->
+              ${this.conditions?.map((condition, key) => {
+                return html `<div @click=${ this._changeCondition } class="condition" id=${key}><span class="special-character">${unsafeHTML(condition.icon)}</span>${condition.name}</div>`
               })}
             </div>
           </div>

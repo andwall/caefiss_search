@@ -2,16 +2,22 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { Condition, Operation, SearchEvent } from "./SearchTypes";
+import { Ref, createRef, ref } from "lit/directives/ref.js";
 
+/*
+ * Class: LookupSearch
+ * Purpose: 
+ *  LookupSearch is a lit element that allows user to search and select available options. Supports multi select.
+*/
 @customElement('search-lookup')
 export class LookupSearch extends LitElement {
 
   @property()
   entityName: string = '';
-
+  
   @property()
   from: string = '';
-
+  
   @property()
   parentEntityName: string = '';
 
@@ -39,13 +45,20 @@ export class LookupSearch extends LitElement {
   @property({attribute: false})
   isMultiSelect: boolean = false;
 
-  private COMPONENT_NAME: string = "SEARCH-LOOKUP";
+  /* Responsible for uniquely identifying "this" element */
+  @property({attribute: false})
+  uniqueRef: Ref<HTMLDivElement> = createRef();
   
+  /* Holds data for lookup */
+  private lookupData: string[]  = [];
+  @property({type: Array, attribute: false}) private selectedData: string[] = [];
+  @property({type: Array, attribute: false}) private filterData: string[] = [];
+
   /*Used for styling purposes */
   @property({attribute: false}) private isDropDownOpen: boolean = false;
   @property({attribute: false}) private conditionKey: number = 0;
   @property({attribute: false}) private isLookupValue: boolean = false;
-  @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
+  @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement; 
   @query('.lookup-wrapper') private lookupWrapper?: HTMLElement;
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
@@ -53,16 +66,6 @@ export class LookupSearch extends LitElement {
     { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
   ]; 
 
-  /* Holds data for lookup */
-  private lookupData: string[]  = [];
-  @property({type: Array, attribute: false}) private selectedData: string[];
-  @property({type: Array, attribute: false}) private filterData: string[];
-
-  constructor(){
-    super();
-    this.selectedData = [];
-    this.filterData = [];
-  }
 
   static override styles = css`
 
@@ -265,7 +268,6 @@ export class LookupSearch extends LitElement {
     .tag-x-container{
       width: 16px;
       text-align: center;
-      z-index: 99;
       cursor: pointer
     }
 
@@ -310,12 +312,12 @@ export class LookupSearch extends LitElement {
 
   /** 
    * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close condition drop down
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close necessary drop downs
    * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
   */
   override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('click', e => this._globalClickAway(e));
+    window.addEventListener('mousedown', e => this._globalClickAway(e));
     this._getData();
   }
 
@@ -370,6 +372,7 @@ export class LookupSearch extends LitElement {
     this.operation = this.findText ? Operation.Change : Operation.Delete; //check if the value is empty
   }
   
+  /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
   _addSelectedData(event: Event, isMultiSelect: boolean){
     let currEl = event.target as HTMLElement;
     let currValue = currEl.innerText; 
@@ -379,7 +382,6 @@ export class LookupSearch extends LitElement {
         this.selectedData = [];
       }
       this.selectedData.push(currValue);
-      this.requestUpdate();
       this._dispatchMyEvent();
     }
     this._toggleLookup();
@@ -389,7 +391,6 @@ export class LookupSearch extends LitElement {
     let currEl = e.target as HTMLElement;
     let index = Number(currEl.parentElement?.id);
     this.selectedData.splice(index, 1);
-    this.requestUpdate();
     this._toggleLookup();
     this._dispatchMyEvent();
   }
@@ -405,10 +406,9 @@ export class LookupSearch extends LitElement {
     } 
   }
   
-  /* Used to handle click away on window - used in connected callback*/
   _globalClickAway(event: Event){
-    let currEl = event.target as HTMLElement;
-    if(!(currEl.nodeName === this.COMPONENT_NAME)){
+    let currEl = event.target as LookupSearch;
+    if(!(currEl.uniqueRef === this.uniqueRef)){
       if(this.isDropDownOpen){
         this._toggleDropDown();
       }
@@ -416,7 +416,7 @@ export class LookupSearch extends LitElement {
         this._toggleLookup();
       }
     }
-  }
+  } 
 
   _toggleDropDown(){
     this.isDropDownOpen = !this.isDropDownOpen;
@@ -449,12 +449,12 @@ export class LookupSearch extends LitElement {
 
   override render(){
     return html `
-      <div @click=${this._localClickAway} class="main-container">
+      <div id="mainContent" ${ref(this.uniqueRef)} @click=${this._localClickAway} class="main-container">
 
         <!-- Drop down (conditions) -->
         <div class="dropdown-wrapper">
           <div @click=${this._toggleDropDown} class="dropdown-btn" id="condition-btn">
-            <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.conditions[this.conditionKey].icon)}` }</span>
+            <span id="selected-item" class="special-character">${unsafeHTML(this.conditions[this.conditionKey].icon)}</span>
             <span><i class="arrow-white down"></i></span>
           </div>
 
@@ -486,7 +486,7 @@ export class LookupSearch extends LitElement {
               ${this.filterData.map((data, key) => {
                 return html`<li class="lookup-option" @click=${(e: Event) => this._addSelectedData(e, this.isMultiSelect)}>${data}</li>`
               })}
-              ${this.filterData.length === 0 && this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Sorry no results</li>` : html ``}
+              ${this.filterData.length === 0 && this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Sorry no results</li>` : ''}
             </ul>
           </div>
         </div>

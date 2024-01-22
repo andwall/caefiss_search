@@ -35,6 +35,8 @@ export class TextSearch extends LitElement {
 
   @property({attribute: false})
   condition: Condition = Condition.Equal;
+
+  private COMPONENT_NAME = "SEARCH-TEXT";
   
   /*Used for styling purposes */
   @property({attribute: false}) private isDropDownOpen: boolean = false;
@@ -316,7 +318,7 @@ export class TextSearch extends LitElement {
   /* Used to handle click away on window - used in connected callback*/
   _globalClickAway(event: Event){
     let currEl = event.target as HTMLElement;
-    if(!(currEl.nodeName === 'SEARCH-TEXT') && this.isDropDownOpen){
+    if(!(currEl.nodeName === this.COMPONENT_NAME) && this.isDropDownOpen){
       this._toggleDropDown();
     }
   }
