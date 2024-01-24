@@ -6,10 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CCAEFISS Search</title>
     <link rel="stylesheet" href="./src/index.css" />
-    <script type="module" src="/src/components/main-search.ts"></script>
-    <script type="module" src="/src/components/searchText.ts"></script>
-    <script type="module" src="/src/components/searchDate.ts"></script>
-    <script type="module" src="/src/components/searchLookup.ts"></script>
+    <script type="module" src="/src/searchText.ts"></script>
+    <script type="module" src="/src/searchDate.ts"></script>
+    <script type="module" src="/src/searchLookup.ts"></script>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
@@ -18,9 +17,12 @@
       <h2 id="showText"></h2>
           <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
           
+          <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
+          
           <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
         <div style="padding-top: 25px; width: 444px;">
 
+          <search-lookup id="searchLookup2" entityName="searchLookup" fieldName="Search Lookup" displayName="Search Lookup"></search-lookup>  
           <search-lookup id="searchLookup" entityName="searchLookup" fieldName="Search Lookup" displayName="Search Lookup"></search-lookup>
 
         </div>
@@ -39,10 +41,22 @@
       searchDate.addEventListener('search-date-event', (e) =>{
         console.log(e.detail)
       })
-
+      
+      let x;
+      let y;
       let searchLookup = document.getElementById('searchLookup');
+      console.log(searchLookup.attributes)
       searchLookup.addEventListener('search-lookup-event', (e) => {
         console.log(e.detail)
+        x = e.detail.context;
+        console.log(x == y)
+      })
+
+      let searchLookup2 = document.getElementById('searchLookup2');
+      searchLookup2.addEventListener('search-lookup-event', (e) => {
+        console.log(e.detail)
+        y = e.detail.context;
+        console.log(x == y)
       })
 
     </script>
