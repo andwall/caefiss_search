@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { Condition, Operation, SearchEvent } from "./SearchTypes";
+import { Condition, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
 
 /**
  * Class: DateSearch
@@ -120,16 +120,18 @@ export class DateSearch extends LitElement{
   } 
    
   /* checked mark aspect */
-  [type="checkbox"]:not(:checked) + label:after,
-  [type="checkbox"]:checked + label:after {
-    content: '✔';
-    // content: '✓';
+  [type="checkbox"]:not(:checked) + label::after,
+  [type="checkbox"]:checked + label::after {
+    // content: '✔';
+    content: "✓";
     position: absolute;
-    top: 0.1em; left: 0.215em;
-    font-size: 0.9em;
-    line-height: 0.8;
+    top: -0.1em;
+    left: 0.2em;
+    font-weight: 900;
+    font-size: 1em;
+    line-height: 1;
     color: green;
-    transition: all .2s ease-in-out;
+    transition: all 0.2s ease-in-out 0s;
   }
 
   /* checked mark aspect changes */
@@ -314,6 +316,7 @@ export class DateSearch extends LitElement{
     let findText = this._generateFindText();
 
     let evt: SearchEvent = {
+      type: SearchTypes.Date,
       entityName: this.entityName,
       from: this.from,
       parentEntityName: this.parentEntityName,
@@ -323,7 +326,9 @@ export class DateSearch extends LitElement{
       findText: findText,
       condition: this.condition,
       operation: this.operation,
-      context: this.context
+      context: this.context,
+      option1: "",
+      option2: ""
     };
     
     let searchChangeEvent = new CustomEvent('search-date-event', {

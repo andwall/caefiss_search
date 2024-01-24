@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { Condition, Operation, SearchEvent } from "./SearchTypes";
+import { Condition, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
 
 /*
@@ -272,11 +272,13 @@ export class LookupSearch extends LitElement {
     }
 
     .tag-x{
-      font-size: 12px;
+      font-size: 18px;
+      font-weight: 700;
     }
 
     .tag-x-container:hover .tag-x{
       color: red;
+      font-weight: 700;
     }
 
     /* Arrow Styling */
@@ -337,6 +339,7 @@ export class LookupSearch extends LitElement {
   _dispatchMyEvent(){
     this._changeMessage();
     let evt: SearchEvent = {
+      type: SearchTypes.Lookup,
       entityName: this.entityName,
       from: this.from,
       parentEntityName: this.parentEntityName,
@@ -346,7 +349,9 @@ export class LookupSearch extends LitElement {
       findText: this.findText,
       condition: this.condition,
       operation: this.operation,
-      context: ''
+      context: '',
+      option1: '',
+      option2: ''
     };
     
     let searchChangeEvent = new CustomEvent('search-lookup-event', {
@@ -432,7 +437,7 @@ export class LookupSearch extends LitElement {
       <div id=${key} class="tag-content">
         <p class="tag-name">${tagName}</p>
         <div @click=${this._removeTag} class="tag-x-container">
-          <p class="tag-x">&#10006;</p>
+          <p class="tag-x">&times;</p>
         </div>
       </div>
     `;
@@ -483,7 +488,7 @@ export class LookupSearch extends LitElement {
             </div>
             <ul class="lookup-options">
               ${!this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: ''}
-              ${this.filterData.map((data, key) => {
+              ${this.filterData.map((data, _key) => {
                 return html`<li class="lookup-option" @click=${(e: Event) => this._addSelectedData(e, this.isMultiSelect)}>${data}</li>`
               })}
               ${this.filterData.length === 0 && this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Sorry no results</li>` : ''}

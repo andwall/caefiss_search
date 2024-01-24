@@ -113,16 +113,18 @@ export class TextSearch extends LitElement {
   } 
    
   /* checked mark aspect */
-  [type="checkbox"]:not(:checked) + label:after,
-  [type="checkbox"]:checked + label:after {
-    content: '✔';
-    // content: '✓';
+  [type="checkbox"]:not(:checked) + label::after,
+  [type="checkbox"]:checked + label::after {
+    // content: '✔';
+    content: "✓";
     position: absolute;
-    top: 0.1em; left: 0.215em;
-    font-size: 0.9em;
-    line-height: 0.8;
+    top: -0.1em;
+    left: 0.2em;
+    font-weight: 900;
+    font-size: 1em;
+    line-height: 1;
     color: green;
-    transition: all .2s ease-in-out;
+    transition: all 0.2s ease-in-out 0s;
   }
 
   /* checked mark aspect changes */
