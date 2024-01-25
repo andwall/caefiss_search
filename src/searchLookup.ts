@@ -1,8 +1,9 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { Condition, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
+import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
+import { CAEFISS } from "./utilities";
 
 /*
  * Class: LookupSearch
@@ -30,6 +31,13 @@ export class LookupSearch extends LitElement {
   @property()
   displayName: string = '';
 
+  /* Responsible for determining if lookup is option set or lookup data */
+  @property()
+  lookupType: string = '';
+
+  @property()
+  alias: string = '';
+
   @property({attribute: false})
   context: string = '';
 
@@ -45,12 +53,14 @@ export class LookupSearch extends LitElement {
   @property({attribute: false})
   isMultiSelect: boolean = false;
 
-  /* Responsible for uniquely identifying "this" element */
   @property({attribute: false})
-  uniqueRef: Ref<HTMLDivElement> = createRef();
+  checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+
+  /* Responsible for uniquely identifying "this" element */
+  private uniqueRef: Ref<HTMLDivElement> = createRef();
   
   /* Holds data for lookup */
-  private lookupData: string[]  = [];
+  private lookupData: string[] = [];
   @property({type: Array, attribute: false}) private selectedData: string[] = [];
   @property({type: Array, attribute: false}) private filterData: string[] = [];
 
@@ -65,7 +75,6 @@ export class LookupSearch extends LitElement {
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
     { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
   ]; 
-
 
   static override styles = css`
 
@@ -320,7 +329,8 @@ export class LookupSearch extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener('mousedown', e => this._globalClickAway(e));
-    this._getData();
+    this._getData("lookupdata");
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
   }
 
   override disconnectedCallback(): void {
@@ -330,10 +340,20 @@ export class LookupSearch extends LitElement {
 
   /* 
   * Purpose: Responsible for fetching necessary data 
-  * Note: currently using dummy data - TODO: get this function from Hany 
+  * Note: currently using hardcoded lookup 
   */
-  _getData(){
-    this.lookupData = ["Option 1", "Option 2", "Option 3", "Option 4", "Option 5", "Option 6", "Option 7", "Option 8", "Option 9", "Option 10"];
+  _getData(lookupType: string){
+
+    //(lookupType === "lookup data" ? (use util.getLookup()) : use util.getOptionSet)
+
+    /* Using hard coded values for now (Jan 24th) */
+    let util = new CAEFISS();
+    if(lookupType === "lookupdata"){
+      let data = util.getLookup('caefiss_cd_immunizing_agents_mls', 'caefiss_english_value');
+
+      data.forEach((d) => this.lookupData.push(d));
+    
+    }  
   }
 
   _dispatchMyEvent(){
@@ -351,7 +371,8 @@ export class LookupSearch extends LitElement {
       operation: this.operation,
       context: '',
       option1: '',
-      option2: ''
+      option2: '',
+      checked: this.checked
     };
     
     let searchChangeEvent = new CustomEvent('search-lookup-event', {
@@ -373,7 +394,7 @@ export class LookupSearch extends LitElement {
   }
 
   _changeMessage(){
-    this.findText = (this.selectedData.length > 0 ? this.selectedData[0] : "");    
+    this.findText = this.selectedData.length > 0 ? this.selectedData[0] : ""; // only adding first el    
     this.operation = this.findText ? Operation.Change : Operation.Delete; //check if the value is empty
   }
   
@@ -445,7 +466,7 @@ export class LookupSearch extends LitElement {
 
   _filterLookup(e: Event){
     let currEl = e.target as HTMLInputElement;
-    this.isLookupValue = (currEl.value ? true : false);
+    this.isLookupValue = currEl.value ? true : false;
     this.filterData = this.lookupData.filter(data => {
       return data.toLowerCase().startsWith(currEl.value.toLowerCase());
     }); 
@@ -484,7 +505,7 @@ export class LookupSearch extends LitElement {
               <i class="search-icon-container">
                 <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42 0a1 1 0 0 0 0-1.39M11 18a7 7 0 1 1 7-7a7 7 0 0 1-7 7"/></svg>
               </i>
-              <input id="lookupSearch" @input=${this._filterLookup} type="text" placeholder="Search">
+              <input id="lookupSearch" @input=${this._filterLookup} type="text" placeholder="Search"></input>
             </div>
             <ul class="lookup-options">
               ${!this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: ''}

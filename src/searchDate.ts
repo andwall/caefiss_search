@@ -1,7 +1,8 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { Condition, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
+import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
+import { Ref, createRef } from "lit/directives/ref.js";
 
 /**
  * Class: DateSearch
@@ -29,6 +30,9 @@ export class DateSearch extends LitElement{
   @property()
   displayName: string = '';
 
+  @property()
+  alias: string = '';
+
   @property({attribute: false})
   context: string = '';
 
@@ -45,9 +49,13 @@ export class DateSearch extends LitElement{
   private date1?: Date;
   
   @property({attribute: false})
-  private date2?: Date;
+  private date2?: Date;  
+  
+  @property({attribute: false})
+  checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
 
-  private COMPONENT_NAME = "SEARCH-DATE";
+  /* Responsible for uniquely identifying "this" element */
+  private uniqueRef: Ref<HTMLDivElement> = createRef();
 
   /* For styling */ 
   @property({ type: Boolean }) private isDropDownOpen: boolean = false;
@@ -270,16 +278,17 @@ export class DateSearch extends LitElement{
    /** 
    * Function: connectedCallback
    * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close condition drop down
-   * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+   * Note: click away only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
   */
   override connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener('click', e => this._globalClickAway(e));
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-     window.removeEventListener('click', this._globalClickAway);
+    window.removeEventListener('click', this._globalClickAway);
   }
   
   _changeDate(event: Event){
@@ -328,7 +337,8 @@ export class DateSearch extends LitElement{
       operation: this.operation,
       context: this.context,
       option1: "",
-      option2: ""
+      option2: "",
+      checked: this.checked
     };
     
     let searchChangeEvent = new CustomEvent('search-date-event', {
@@ -350,7 +360,7 @@ export class DateSearch extends LitElement{
     } 
   } 
   
-  /* Used to handle click away event on this element (searchText) */
+  /* Used to handle click away event on this element */
   _localClickAway(event: Event){
     let currEl = event.target as HTMLElement;
     if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
@@ -360,19 +370,26 @@ export class DateSearch extends LitElement{
 
   /* Used to handle click away on window - used in connected callback*/
   _globalClickAway(event: Event){
-    let currEl = event.target as HTMLElement;
-    if(!(currEl.nodeName === this.COMPONENT_NAME) && this.isDropDownOpen){
+    let currEl = event.target as DateSearch;
+    if(!(currEl.uniqueRef === this.uniqueRef) && this.isDropDownOpen){
       this._toggleDropDown();
     }
   }
-    
+  
+  _setChecked(event: Event){
+    let currEl = event.target as HTMLInputElement;
+    let isChecked = currEl.checked; 
+    this.checked.include = isChecked ? true : false;
+    this._dispatchMyEvent();
+  }
+
   override render(){
     return html`
       <div id="main-content" @click= ${ this._localClickAway }>
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
-            <input type="checkbox" id="checkbox" />
+            <input @click=${this._setChecked} type="checkbox" id="checkbox" />
             <label for="checkbox"></label>
           </div>
             <h3>${ this.displayName }</h3>
@@ -383,7 +400,7 @@ export class DateSearch extends LitElement{
           <!-- DropDown -->
           <div class="dropdown-wrapper">
             <div @click=${ this._toggleDropDown } class="dropdown-btn">
-              <span id="selected-item" class="special-character">${ html `${unsafeHTML(this.conditions[this.conditionKey].icon)}` }</span>
+              <span id="selected-item" class="special-character">${ unsafeHTML(this.conditions[this.conditionKey].icon) }</span>
               <span><i class="arrow down"></i></span>
             </div>
 

@@ -5,7 +5,6 @@ enum SearchTypes {
     twoOption = "twooption"
 }
 
-
 enum Operation {
     Delete = 1,
     Change
@@ -39,12 +38,15 @@ type SearchEvent = {
     option1: string;
     option2: string;
     context: string;
+    checked: EntityInfo;
 };
 
 type EntityInfo = {
     name: string;
-    from: string;
+    field: string;
     alias: string;
+    include: boolean;
 }
 
-export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo};
+export { SearchTypes, Operation, Condition };
+export type { SearchEvent, EntityInfo };
