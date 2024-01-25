@@ -9,21 +9,31 @@
     <script type="module" src="/src/searchText.ts"></script>
     <script type="module" src="/src/searchDate.ts"></script>
     <script type="module" src="/src/searchLookup.ts"></script>
+    <script type="module" src="/src/searchTwoOption.ts"></script>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
     <div class="app">
       <h1>CCAEFISS Search</h1>
       <h2 id="showText"></h2>
-          <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
+          <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" alias="v_number_alias" parentEntityName="parent"></search-text>
           
-          <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" parentEntityName="parent"></search-text>
+        <search-twooption id="searchTwo"></search-twooption> 
+        <search-twooption id="searchTwo"></search-twooption> 
           
-          <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
+          <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>  <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
+        <div style="padding-top: 25px; width: 444px;">
         <div style="padding-top: 25px; width: 444px;">
 
           <search-lookup id="searchLookup2" entityName="searchLookup" fieldName="Search Lookup" displayName="Search Lookup"></search-lookup>  
           <search-lookup id="searchLookup" entityName="searchLookup" fieldName="Search Lookup" displayName="Search Lookup"></search-lookup>
+
+        </div> 
+        
+        <div>
+          <h2 id="showText2"></h2>
+          <search-text id="man1" displayName="Manufacturer #1" entityName="manufacturer" fieldName="manufacturer_1" parentEntityName="incident"></search-text>
+
 
         </div>
     </div>
@@ -35,7 +45,15 @@
       vNum.addEventListener('search-text-event', (e) =>{
         console.log(e.detail)
         showText.innerHTML = e.detail.displayName;
+      })   
+      
+      let zNum = document.getElementById('man1');
+      let showText2 = document.getElementById('showText2');
+      zNum.addEventListener('search-text-event', (e) =>{
+        console.log(e.detail)
+        showText2.innerHTML = e.detail.displayName;
       })
+
 
       let searchDate = document.getElementById('searchDate');
       searchDate.addEventListener('search-date-event', (e) =>{
@@ -57,6 +75,11 @@
         console.log(e.detail)
         y = e.detail.context;
         console.log(x == y)
+      })
+
+      let searchTwo = document.getElementById('searchTwo');
+      searchTwo.addEventListener('search-twooption-event', (e) => {
+        console.log(e.detail)
       })
 
     </script>
