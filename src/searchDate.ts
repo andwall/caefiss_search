@@ -1,8 +1,7 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
-import { Ref, createRef } from "lit/directives/ref.js";
 
 /**
  * Class: DateSearch
@@ -54,13 +53,7 @@ export class DateSearch extends LitElement{
   @property({attribute: false})
   checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
 
-  /* Responsible for uniquely identifying "this" element */
-  private uniqueRef: Ref<HTMLDivElement> = createRef();
-
   /* For styling */ 
-  @property({ type: Boolean }) private isDropDownOpen: boolean = false;
-  @property({ type: Number })  private conditionKey: number = 0;
-  @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "on", name: "on", icon: "&#9737;", condition: Condition.On },
     { id: "between", name: "between", icon: "&harr;", condition: Condition.Between },
@@ -68,227 +61,185 @@ export class DateSearch extends LitElement{
   ];
 
   static override styles = css`
-  *{
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: inherit;
-  } 
+    *{
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: inherit;
+    } 
 
-  .container{
-    display: flex;
-    gap: 2px;
-  }
-  
-  .display-name-container{
-    display: flex;
-    gap: 5px;
-    align-items: center;
-  }
+    #main-container{
+      width: 100%;
+    }
 
-  .checkbox-container{
-    padding-top: 0.5em;
-  }
+    .hidden{
+      display: none;
+    } 
 
-  /* Custom checkbox styling */
-  [type="checkbox"]:not(:checked),
-  [type="checkbox"]:checked {
-    position: absolute;
-    left: -9999px;
-  }
+    .display-name-container{
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
 
-  [type="checkbox"]:not(:checked) + label,
-  [type="checkbox"]:checked + label {
-    position: relative;
-    padding-left: 1em;
-    cursor: pointer;
-  }
+    .checkbox-container{
+      padding-top: 0.5em;
+    }
 
-  /* checkbox aspect */
-  [type="checkbox"]:not(:checked) + label:before{
-    content: '';
-    position: absolute;
-    left: 0; top: 0;
-    width: 0.65em; height: 0.65em;
-    border: 3px solid #1e1e1e;
-    background: #fff;
-    border-radius: 4px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
-  }
+    /* Custom checkbox styling */
+    [type="checkbox"]:not(:checked),
+    [type="checkbox"]:checked {
+      position: absolute;
+      left: -9999px;
+    }
 
-  [type="checkbox"]:checked + label:before{
-    content: '';
-    position: absolute;
-    left: 0; top: 0;
-    width: 0.65em; height: 0.65em;
-    border: 3px solid green;
-    background: #fff;
-    border-radius: 4px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
-  } 
-   
-  /* checked mark aspect */
-  [type="checkbox"]:not(:checked) + label::after,
-  [type="checkbox"]:checked + label::after {
-    // content: '✔';
-    content: "✓";
-    position: absolute;
-    top: -0.1em;
-    left: 0.2em;
-    font-weight: 900;
-    font-size: 1em;
-    line-height: 1;
-    color: green;
-    transition: all 0.2s ease-in-out 0s;
-  }
+    [type="checkbox"]:not(:checked) + label,
+    [type="checkbox"]:checked + label {
+      position: relative;
+      padding-left: 1em;
+      cursor: pointer;
+    }
 
-  /* checked mark aspect changes */
-  [type="checkbox"]:not(:checked) + label:after {
-    opacity: 0;
-    transform: scale(0);
-  }
+    /* checkbox aspect */
+    [type="checkbox"]:not(:checked) + label:before{
+      content: '';
+      position: absolute;
+      left: 0; top: 0;
+      width: 0.65em; height: 0.65em;
+      border: 3px solid #1e1e1e;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+    }
 
-  [type="checkbox"]:checked + label:after {
-    opacity: 1;
-    transform: scale(1);
-  }
+    [type="checkbox"]:checked + label:before{
+      content: '';
+      position: absolute;
+      left: 0; top: 0;
+      width: 0.65em; height: 0.65em;
+      border: 3px solid green;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+    } 
+    
+    /* checked mark aspect */
+    [type="checkbox"]:not(:checked) + label::after,
+    [type="checkbox"]:checked + label::after {
+      // content: '✔';
+      content: "✓";
+      position: absolute;
+      top: -0.1em;
+      left: 0.2em;
+      font-weight: 900;
+      font-size: 1em;
+      line-height: 1;
+      color: green;
+      transition: all 0.2s ease-in-out 0s;
+    }
+    
+    /* checked mark aspect changes */
+    [type="checkbox"]:not(:checked) + label:after {
+      opacity: 0;
+      transform: scale(0);
+    }
 
-  /* disabled checkbox */
-  [type="checkbox"]:disabled:not(:checked) + label:before,
-  [type="checkbox"]:disabled:checked + label:before {
-    box-shadow: none;
-    border-color: #bbb;
-    background-color: #ddd;
-  }
+    [type="checkbox"]:checked + label:after {
+      opacity: 1;
+      transform: scale(1);
+    }
 
-  [type="checkbox"]:disabled:checked + label:after {
-    color: #999;
-  }
+    /* disabled checkbox */
+    [type="checkbox"]:disabled:not(:checked) + label:before,
+    [type="checkbox"]:disabled:checked + label:before {
+      box-shadow: none;
+      border-color: #bbb;
+      background-color: #ddd;
+    }
 
-  [type="checkbox"]:disabled + label {
-    color: #aaa;
-  }
+    [type="checkbox"]:disabled:checked + label:after {
+      color: #999;
+    }
 
-  /* accessibility */
-  [type="checkbox"]:not(:checked):focus + label:before {
-    border: 3px solid #0535d2;
-  }
+    [type="checkbox"]:disabled + label {
+      color: #aaa;
+    }
 
-  /* hover style just for information */
-  label:hover:before {
-    border: 3px solid #0535d2!important;
-  }
+    /* accessibility */
+    [type="checkbox"]:not(:checked):focus + label:before {
+      // border: 3px solid #0535d2;
+      border: 3px solid #66afe9;
+    }
+    
+    /* hover style just for information */
+    label:hover:before {
+      // border: 3px solid #0535d2!important;
+      border: 3px solid #66afe9 !important;
+    }
+    
+    /* Input Styling */
+    .input-container{
+      display: flex;
+      gap: 2px;
+    }
 
-  .date-search-wrapper{
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    width: 100%;
-  }
+    .date-search-wrapper{
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      width: 100%;
+    }
+    
+    input[type=date]{
+      width: 100%;
+      height: 100%; 
+      padding: 6px;
+      -webkit-transition: 0.15s;
+      transition: 0.15s;
+      border-radius: 6px;
+      border: solid 1px lightgray;
+      outline: none;
+      box-shadow: 0 5px 15px rgba(0,0,0,0,0); 
+    }
 
-  input[type=date]{
-    width: 100%;
-    height: 100%; 
-    padding: 6px;
-    -webkit-transition: 0.15s;
-    transition: 0.15s;
-    border-radius: 6px;
-    border: solid 1px lightgray;
-    outline: none;
-    box-shadow: 0 5px 15px rgba(0,0,0,0,0); 
-  }
-
-  input[type=date]:focus {
-    border: 1px solid #66afe9;
-    box-shadow: 0 0px 8px rgba(102,175,233,.45);
-    outline: none;
-  }
-
-  /* Dropdown styling */
-  .dropdown-wrapper{
-    position: relative;
-    font-size: 12px;
-  }
-
-  .dropdown-btn{
-    padding: 8px 8px;
-    background: #2d2d2d;
-    border-radius: 5px;
-    width: min-content;
-    white-space: nowrap; 
-    color: white;
-    cursor: pointer;
-  }
-
-  .dropdown-menu{
-    width: max-content;
-    background-color: #2d2d2d;
-    border-radius: 5px;
-    margin-top: 2px;
-    box-shadow: 0 5px 10px rgba(0,0,0,0.15);
-    display: none;
-    position: absolute;
-    z-index: 10;
-  }
-
-  .dropdown-menu.open{
-    display: block;
-  }
-
-  .dropdown-menu .condition{
-    padding: 6px 10px;
-    cursor: pointer;
-    border-radius: 5px;
-  }
-
-  .dropdown-menu .condition:hover{
-    background-color: #1967d2;
-  }
-
-  .special-character{
-    padding-right: 5px;
-  }
-
-  .condition, .special-character{
-    color: white;
-    font-size: 14px;
-  }
-
-  /* Arrow Styling */
-  .arrow{
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    display: inline-block;
-    padding: 3px;
-    margin-bottom: 2px;
-  }
-
-  .up{
-    transform: rotate(-135deg);
-    -webkit-transform: rotate(-135deg);
-  }
-
-  .down{
-    transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-  }
-  
+    input[type=date]:focus {
+      border: 1px solid #66afe9;
+      box-shadow: 0 0px 8px rgba(102,175,233,.45);
+      outline: none;
+    }
+    
+    /* Dropdown styling */
+    #condition-btn{
+      font-size: 16px;
+      width: 3.3em;
+      height: auto; 
+      padding: 5px;
+      background: #2d2d2d;
+      border-radius: 5px;
+      white-space: nowrap; 
+      color: white;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+    
+    #condition-btn:focus{
+      border: 2px solid #66afe9;
+      box-shadow: 0 0px 8px rgba(102,175,233,.45);
+      outline: none;
+    }
   `; 
 
-   /** 
+  /** 
    * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close condition drop down
-   * Note: click away only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) set all checked information given to this component 
   */
   override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('click', e => this._globalClickAway(e));
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('click', this._globalClickAway);
   }
   
   _changeDate(event: Event){
@@ -300,11 +251,9 @@ export class DateSearch extends LitElement{
   }
 
   _changeCondition(event: Event){
-    const clickedEl = event.target as HTMLElement;
-    this.conditionKey = Number(clickedEl.id)
-    this.condition = this.conditions[this.conditionKey].condition;
-    this._toggleDropDown();
-
+    const clickedEl = event.target as HTMLSelectElement;
+    let selectedIndex = Number(clickedEl.selectedIndex);
+    this.condition = this.conditions[selectedIndex].condition;
     if(this.operation === Operation.Change)
       this._dispatchMyEvent();
   }
@@ -348,33 +297,6 @@ export class DateSearch extends LitElement{
     });
     this.dispatchEvent(searchChangeEvent);
   }
-
-  _toggleDropDown(){
-    this.isDropDownOpen = !this.isDropDownOpen;
-  }   
-  
-  _handleClickAway(event: Event){
-    let currEl = event.target as HTMLElement;
-    if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
-      this._toggleDropDown();
-    } 
-  } 
-  
-  /* Used to handle click away event on this element */
-  _localClickAway(event: Event){
-    let currEl = event.target as HTMLElement;
-    if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
-      this._toggleDropDown();
-    }  
-  }
-
-  /* Used to handle click away on window - used in connected callback*/
-  _globalClickAway(event: Event){
-    let currEl = event.target as DateSearch;
-    if(!(currEl.uniqueRef === this.uniqueRef) && this.isDropDownOpen){
-      this._toggleDropDown();
-    }
-  }
   
   _setChecked(event: Event){
     let currEl = event.target as HTMLInputElement;
@@ -385,7 +307,7 @@ export class DateSearch extends LitElement{
 
   override render(){
     return html`
-      <div id="main-content" @click= ${ this._localClickAway }>
+      <div id="main-container">
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
@@ -395,22 +317,16 @@ export class DateSearch extends LitElement{
             <h3>${ this.displayName }</h3>
         </div>
       
-        <div class="container">
-
-          <!-- DropDown -->
-          <div class="dropdown-wrapper">
-            <div @click=${ this._toggleDropDown } class="dropdown-btn">
-              <span id="selected-item" class="special-character">${ unsafeHTML(this.conditions[this.conditionKey].icon) }</span>
-              <span><i class="arrow down"></i></span>
-            </div>
-
-            <!-- Dropdown menu -->
-            <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
-              <!-- Generate all condition fields -->
+        <!-- Conditions & Input Container -->
+        <div class="input-container">
+          <div class="condition-wrapper">
+            <label for="condition-btn" class="hidden">Condition</label> 
+            <select @change=${this._changeCondition} id="condition-btn">
+              <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
-                return html `<div @click=${ this._changeCondition } class="condition" id=${key}><span class="special-character">${unsafeHTML(condition.icon)}</span>${condition.name}</div>`
+                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
               })}
-            </div>
+            </select> 
           </div>
 
           <!-- Date Search --> 
