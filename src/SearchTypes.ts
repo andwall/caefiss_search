@@ -48,5 +48,4 @@ type EntityInfo = {
     include: boolean;
 }
 
-export { SearchTypes, Operation, Condition };
-export type { SearchEvent, EntityInfo };
+export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo};

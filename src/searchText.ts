@@ -1,9 +1,7 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./SearchTypes";
-import { Ref, createRef } from "lit/directives/ref.js";
-
 /*
  * Class: TextSearch
  * Purpose: 
@@ -47,20 +45,13 @@ export class TextSearch extends LitElement {
 
   @property({attribute: false})
   checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-  
-  /* Responsible for uniquely identifying "this" element */
-  private uniqueRef: Ref<HTMLDivElement> = createRef();
-  
-  /*Used for styling purposes */
-  @property({attribute: false}) private isDropDownOpen: boolean = false;
-  @property({attribute: false}) private conditionKey: number = 0;
-  @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
+
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
     { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains },      
-    { id: "beginsWith", name: "begins with", icon: "A<sub>z</sub>...", condition: Condition.BeginsWith },
-    { id: "endsWith", name: "ends with", icon: "...A<sub>z</sub>", condition: Condition.EndsWith }, 
+    { id: "beginsWith", name: "begins with", icon: "A..", condition: Condition.BeginsWith },
+    { id: "endsWith", name: "ends with", icon: "..A", condition: Condition.EndsWith }, 
     { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
   ]; 
 
@@ -72,9 +63,12 @@ export class TextSearch extends LitElement {
     font-family: inherit;
     }
 
-    .container{
-      display: flex;
-      gap: 2px;
+    #main-container{
+      width: 100%;
+    }
+    
+    .hidden{
+      display: none;
     }
 
     /* Display name styling */
@@ -162,21 +156,29 @@ export class TextSearch extends LitElement {
     [type="checkbox"]:disabled:checked + label:after {
       color: #999;
     }
-
+    
     [type="checkbox"]:disabled + label {
       color: #aaa;
     }
-
+    
     /* accessibility */
     [type="checkbox"]:not(:checked):focus + label:before {
-      border: 3px solid #0535d2;
+      // border: 3px solid #0535d2;
+      border: 3px solid #66afe9;
     }
-
+    
     /* hover style just for information */
     label:hover:before {
-      border: 3px solid #0535d2!important;
+      // border: 3px solid #0535d2!important;
+      border: 3px solid #66afe9 !important;
     }
 
+    /* Input styling */
+    .input-container{
+      display: flex;
+      gap: 2px;
+    }
+    
     input[type=text]{
       width: 100%;
       padding: 6px;
@@ -194,90 +196,38 @@ export class TextSearch extends LitElement {
       outline: none;
     }
 
-    /* Dropdown styling */
-    .dropdown-wrapper{
-      position: relative;
-      font-size: 12px;
-    }
-
-    .dropdown-btn{
-      padding: 8px 8px;
+    /* Condition dropdown styling */
+    #condition-btn{
+      font-size: 16px;
+      width: 3.3em;
+      height: auto; 
+      padding: 5px;
       background: #2d2d2d;
       border-radius: 5px;
-      width: min-content;
       white-space: nowrap; 
       color: white;
       cursor: pointer;
+      border: 2px solid transparent;
     }
-
-    .dropdown-menu{
-      width: max-content;
-      background-color: #2d2d2d;
-      border-radius: 5px;
-      margin-top: 2px;
-      box-shadow: 0 5px 10px rgba(0,0,0,0.15);
-      display: none;
-      position: absolute;
-      z-index: 10;
-    }
-
-    .dropdown-menu.open{
-      display: block;
-    }
-
-    .dropdown-menu .condition{
-      padding: 6px 10px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .dropdown-menu .condition:hover{
-      background-color: #1967d2;
-    }
-
-    .special-character{
-      padding-right: 5px;
-    }
-
-    .condition, .special-character{
-      color: white;
-      font-size: 14px;
-    }
-
-    /* Arrow Styling */
-    .arrow{
-      border: solid white;
-      border-width: 0 2px 2px 0;
-      display: inline-block;
-      padding: 3px;
-      margin-bottom: 2px;
-    }
-
-    .up{
-      transform: rotate(-135deg);
-      -webkit-transform: rotate(-135deg);
-    }
-
-    .down{
-      transform: rotate(45deg);
-      -webkit-transform: rotate(45deg);
+    
+    #condition-btn:focus{
+      border: 2px solid #66afe9;
+      box-shadow: 0 0px 8px rgba(102,175,233,.45);
+      outline: none;
     }
   `;
 
   /** 
    * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close condition drop down
-   * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) set all checked information given to this component 
   */
  override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('click', e => this._globalClickAway(e));
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('click', this._globalClickAway);
   }
 
   _changeMessage(event: Event){
@@ -288,11 +238,9 @@ export class TextSearch extends LitElement {
   }
   
   _changeCondition(e: Event){
-    const clickedEl = e.target as HTMLElement;
-    this.conditionKey = Number(clickedEl.id); 
-    this.condition = this.conditions[this.conditionKey].condition;
-    this._toggleDropDown();
-    
+    const clickedEl = e.target as HTMLSelectElement;
+    let selectedIndex = Number(clickedEl.selectedIndex);
+    this.condition = this.conditions[selectedIndex].condition;
     if(this.findText)
       this._dispatchMyEvent();
   }
@@ -323,36 +271,16 @@ export class TextSearch extends LitElement {
     this.dispatchEvent(searchChangeEvent);
   }
   
-  _toggleDropDown(){
-    this.isDropDownOpen = !this.isDropDownOpen;
-  }
-    
-  /* Used to handle click away event on "this" element */
-  _localClickAway(event: Event){
-    let currEl = event.target as HTMLElement;
-    if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
-      this._toggleDropDown();
-    }  
-  }
-
-  /* Used to handle click away on window - used in connected callback*/
-  _globalClickAway(event: Event){
-    let currEl = event.target as TextSearch;
-    if(!(currEl.uniqueRef === this.uniqueRef) && this.isDropDownOpen){
-      this._toggleDropDown();
-    }
-  }
-
   _setChecked(event: Event){
     let currEl = event.target as HTMLInputElement;
     let isChecked = currEl.checked; 
     this.checked.include = isChecked ? true : false;
     this._dispatchMyEvent();
   }
-    
+
   override render(){
     return html` 
-    <div id="main-content" @click=${this._localClickAway}>  
+    <div id="main-container">  
       <div class="display-name-container">
 
         <!-- Custom Checkbox -->
@@ -362,24 +290,22 @@ export class TextSearch extends LitElement {
         </div>
           <h3>${this.displayName}</h3>
       </div>
-        
-      <div class="container">
-        <div class="dropdown-wrapper">
-            
-          <div @click=${this._toggleDropDown}  class="dropdown-btn" id="condition-btn">
-            <span id="selected-item" class="special-character">${ unsafeHTML(this.conditions[this.conditionKey].icon) }</span>
-            <span><i class="arrow down"></i></span>
-          </div>
-
-          <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
+      
+      <!-- Conditions & input container -->
+      <div class="input-container">
+        <div class="condition-wrapper">
+          <label for="condition-btn" class="hidden">Condition</label> 
+          <select @change=${this._changeCondition} id="condition-btn">
+            <!-- Populate conditions -->
             ${this.conditions?.map((condition, key) => {
-              return html `<div @click=${this._changeCondition} class="condition" id=${key}><span class="special-character">${unsafeHTML(condition.icon)}</span>${condition.name}</div>`
+              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
             })}
-          </div>
+          </select> 
         </div>
         
         <input @change=${this._changeMessage} type="text" class="input"></input>
       </div>
-    </div>`;
+    </div>
+    `;
   }
 }
