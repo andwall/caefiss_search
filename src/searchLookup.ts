@@ -72,7 +72,8 @@ export class LookupSearch extends LitElement {
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
-    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
+    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
+    { id: "notIn", name: "not in", icon: "&NotElement;", condition: Condition.NotIn }
   ]; 
 
   static override styles = css`
