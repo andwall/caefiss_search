@@ -115,11 +115,26 @@ export class LookupSearch extends LitElement {
     }
     
     /* Select button */
+    .select-btn-input:focus + .select-btn{
+      border: 1px solid #66afe9;
+      box-shadow: 0 0px 8px rgba(102, 175, 233, .45);
+    }
+
+    .select-btn-input{
+      position: absolute;
+      z-index: 0;
+      color: tranparent;
+      background: transparent;
+      border:none;
+    }
+
     .select-btn, .lookup-options .lookup-option{
       display: flex;
       cursor: pointer;
       align-items: center;
     }
+
+
     
     .select-btn{
       min-width: 150px;
@@ -449,6 +464,8 @@ export class LookupSearch extends LitElement {
        
         <!-- Drop down (lookup) -->
         <div class="lookup-wrapper">
+          <!-- Used for accessibility (tab through) -->
+          <input type="button" class="select-btn-input"/>
           <div @click=${this._toggleLookup} class="select-btn">
             <span class="tag-container">${this.selectedData.map((data, key) => { 
               return this._generateTag(data, key); 
