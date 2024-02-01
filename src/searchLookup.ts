@@ -23,6 +23,9 @@ export class LookupSearch extends LitElement {
   parentEntityName: string = '';
 
   @property()
+  parentEntityId: string = '';
+
+  @property()
   to: string = '';
 
   @property()
@@ -51,7 +54,7 @@ export class LookupSearch extends LitElement {
   condition: Condition = Condition.Equal;
   
   @property({attribute: false})
-  isMultiSelect: boolean = true;
+  isMultiSelect: boolean = false;
 
   @property({attribute: false})
   checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
@@ -67,13 +70,11 @@ export class LookupSearch extends LitElement {
   /*Used for styling purposes */
   @property({attribute: false}) private isLookupValue: boolean = false;
   @query('.lookup-wrapper') private lookupWrapper?: HTMLElement;
-  @query('.select-btn-input') private selectBtnInput?: HTMLInputElement;
-  @query('.lookup-option') private lookupOption?: HTMLElement;
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
     { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
-    { id: "notIn", name: "not in", icon: "&NotElement;", condition: Condition.NotIn }
+    { id: "notIn", name: "not in", icon: "&notni;", condition: Condition.NotIn }
   ]; 
 
   static override styles = css`
@@ -118,11 +119,6 @@ export class LookupSearch extends LitElement {
       display: flex;
       cursor: pointer;
       align-items: center;
-    }
-
-    .select-btn-input:focus + .select-btn{
-      border: 1px solid #66afe9;
-      box-shadow: 0 0px 8px rgba(102, 175, 233, .45);
     }
     
     .select-btn{
@@ -309,28 +305,11 @@ export class LookupSearch extends LitElement {
     window.addEventListener('mousedown', e => this._globalClickAway(e));
     this._getData("lookupdata");
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
-
-  
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener('click', this._globalClickAway);
-  }
-
-  /* Responsible for accessibility on keydown "enter". Opens the lookup drop down */ 
-  protected firstUpdated(){
-    this.selectBtnInput?.addEventListener('keydown', (e) => {
-      if(e.key === "Enter"){
-        e.preventDefault();
-        this._toggleLookup();
-        console.log('clicked enter')
-      }
-    });
-
-    this.lookupOption?.addEventListener('keydown', (e) => {
-      console.log("lookup option working")
-    })
   }
 
   /* 
@@ -339,15 +318,11 @@ export class LookupSearch extends LitElement {
   */
   _getData(lookupType: string){
     /* Using hard coded values for now (Jan 24th) */
-    // let util = new CAEFISS();
-    // if(lookupType === "lookupdata"){
-    //   let data = util.getLookup('caefiss_cd_immunizing_agents_mls', 'caefiss_english_value');
-    //   data.forEach((d) => this.lookupData.push(d));
-    // } 
-    
-    for(let i = 0; i < 10; i++){
-      this.lookupData.push("Option " + i);
-    }
+    let util = new CAEFISS();
+    if(lookupType === "lookupdata"){
+      let data = util.getLookup(this.entityName, this.fieldName);
+      data.forEach((d) => this.lookupData.push(d));
+    }  
   }
 
   _dispatchMyEvent(){
@@ -391,20 +366,18 @@ export class LookupSearch extends LitElement {
   }
   
   /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
-  _addSelectedData(event: Event){
+  _addSelectedData(event: Event, isMultiSelect: boolean){
     let currEl = event.target as HTMLElement;
     let currValue = currEl.innerText; 
     
     if(!this.selectedData.includes(currValue)){
-      if(!this.isMultiSelect){
+      if(!isMultiSelect){
         this.selectedData = [];
       }
       this.selectedData.push(currValue);
-      console.log(this.selectedData)
       this._dispatchMyEvent();
     }
     this._toggleLookup();
-    this.requestUpdate();
   }
   
   _removeTag(e: Event){
@@ -476,8 +449,6 @@ export class LookupSearch extends LitElement {
        
         <!-- Drop down (lookup) -->
         <div class="lookup-wrapper">
-          <!-- Used for accessibility (tab through) -->
-          <input type="button" class="select-btn-input"/>
           <div @click=${this._toggleLookup} class="select-btn">
             <span class="tag-container">${this.selectedData.map((data, key) => { 
               return this._generateTag(data, key); 
@@ -493,10 +464,9 @@ export class LookupSearch extends LitElement {
               <input id="lookupSearch" @input=${this._filterLookup} type="text" placeholder="Search"></input>
             </div>
             <ul class="lookup-options">
-              ${!this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: html ``}
-              <li tabindex="0" class="lookup-option"></li>
+              ${!this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: ''}
               ${this.filterData.map((data, _key) => {
-                return html`<li tabindex="0" class="lookup-option" @click=${this._addSelectedData}>${data}</li>`
+                return html`<li tabindex="0" class="lookup-option" @click=${(e: Event) => this._addSelectedData(e, this.isMultiSelect)}>${data}</li>`
               })}
               ${this.filterData.length === 0 && this.isLookupValue ? html `<li class="lookup-info-message"> &#x1F6C8; Sorry no results</li>` : ''}
             </ul>
