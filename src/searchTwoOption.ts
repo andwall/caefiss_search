@@ -1,8 +1,7 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./SearchTypes";
-import { Ref, createRef } from "lit/directives/ref.js";
 
 @customElement('search-twooption')
 export class TwoOptionSearch extends LitElement {
@@ -51,14 +50,8 @@ export class TwoOptionSearch extends LitElement {
   
   @property({attribute: false})
   checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-  
-  /* Responsible for uniquely identifying "this" element */
-  private uniqueRef: Ref<HTMLDivElement> = createRef();
 
   /*Used for styling purposes */
-  @property({ attribute: false }) private isDropDownOpen: boolean = false;
-  @property({ attribute: false }) private conditionKey: number = 0;
-  @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement;
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "in", name: "in", icon: "&ni;", condition: Condition.In },
     { id: "notIn", name: "not in", icon: "&ne;", condition: Condition.NotEqual },
@@ -73,12 +66,12 @@ export class TwoOptionSearch extends LitElement {
     font-family: inherit;
     }
 
-    body{
+    #main-container{
       width: 100%;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    }
+
+    .hidden{
+      display: none;
     }
 
     .container{
@@ -185,100 +178,50 @@ export class TwoOptionSearch extends LitElement {
 
       /* accessibility */
       [type="checkbox"]:not(:checked):focus + label:before {
-        border: 3px solid #0535d2;
+        // border: 3px solid #0535d2;
+        border: 3px solid #66afe9;
       }
 
     }
 
     /* hover style just for information */
     label:hover:before {
-      border: 3px solid #0535d2!important;
+      // border: 3px solid #0535d2!important;
+      border: 3px solid #66afe9 !important;
     }
 
-    /* Dropdown styling */
-    .dropdown-wrapper{
-      position: relative;
-      font-size: 12px;
-    }
-
-    .dropdown-btn{
-      padding: 8px 8px;
+    /* Condition dropdown styling */
+    #condition-btn{
+      font-size: 16px;
+      width: 3.3em;
+      height: auto; 
+      padding: 5px;
       background: #2d2d2d;
       border-radius: 5px;
-      width: min-content;
       white-space: nowrap; 
       color: white;
       cursor: pointer;
+      border: 2px solid transparent;
     }
-
-    .dropdown-menu{
-      width: max-content;
-      background-color: #2d2d2d;
-      border-radius: 5px;
-      margin-top: 2px;
-      box-shadow: 0 5px 10px rgba(0,0,0,0.15);
-      display: none;
-      position: absolute;
-      z-index: 10;
-    }
-
-    .dropdown-menu.open{
-      display: block;
-    }
-
-    .dropdown-menu .condition{
-      padding: 6px 10px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .dropdown-menu .condition:hover{
-      background-color: #1967d2;
-    }
-
-    .special-character{
-      padding-right: 5px;
-    }
-
-    .condition, .special-character{
-      color: white;
-      font-size: 14px;
-    }
-
-    /* Arrow Styling */
-    .arrow{
-      border: solid white;
-      border-width: 0 2px 2px 0;
-      display: inline-block;
-      padding: 3px;
-      margin-bottom: 2px;
-    }
-
-    .up{
-      transform: rotate(-135deg);
-      -webkit-transform: rotate(-135deg);
-    }
-
-    .down{
-      transform: rotate(45deg);
-      -webkit-transform: rotate(45deg);
+    
+    #condition-btn:focus{
+      border: 2px solid #66afe9;
+      box-shadow: 0 0px 8px rgba(102,175,233,.45);
+      outline: none;
     }
   `;
 
   /** 
    * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close condition drop down
-   * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+   * Purpose: After this compoonent is added to DOM, set the checked information 
   */
   override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('click', e => this._globalClickAway(e));
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('click', this._globalClickAway);
   }
 
   _click1(event: Event) {
@@ -296,10 +239,9 @@ export class TwoOptionSearch extends LitElement {
   }
 
   _changeCondition(e: Event) {
-    const clickedEl = e.target as HTMLElement;
-    this.conditionKey = Number(clickedEl.id);
-    this.condition = this.conditions[this.conditionKey].condition;
-    this._toggleDropDown();
+    const clickedEl = e.target as HTMLSelectElement;
+    let selectedIndex = Number(clickedEl.selectedIndex);
+    this.condition = this.conditions[selectedIndex].condition;
     this._dispatchMyEvent();
   }
 
@@ -329,26 +271,6 @@ export class TwoOptionSearch extends LitElement {
     this.dispatchEvent(searchChangeEvent);
   }
 
-  _toggleDropDown() {
-    this.isDropDownOpen = !this.isDropDownOpen;
-  }
-
-  /* Used to handle click away event on "this" element */
-  _localClickAway(event: Event){
-    let currEl = event.target as HTMLElement;
-    if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
-      this._toggleDropDown();
-    }  
-  }
-
-  /* Used to handle click away on window - used in connected callback*/
-  _globalClickAway(event: Event){
-    let currEl = event.target as TwoOptionSearch;
-    if(!(currEl.uniqueRef === this.uniqueRef) && this.isDropDownOpen){
-      this._toggleDropDown();
-    }
-  }
-
   _setChecked(event: Event){
     let currEl = event.target as HTMLInputElement;
     let isChecked = currEl.checked;  
@@ -358,7 +280,7 @@ export class TwoOptionSearch extends LitElement {
     
   override render() {
     return html` 
-      <div id="main-content" @click=${this._localClickAway}> 
+      <div id="main-container"> 
       
         <div class="display-name-container">
           <!-- Custom Checkbox -->
@@ -370,20 +292,14 @@ export class TwoOptionSearch extends LitElement {
         </div>
 
         <div class="container">
-          <div class="dropdown-wrapper">
-
-            <!-- Dropdown button -->
-            <div @click=${this._toggleDropDown} class="dropdown-btn" id="condition-btn">
-              <span id="selected-item" class="special-character">${unsafeHTML(this.conditions[this.conditionKey].icon)}</span>
-              <span><i class="arrow down"></i></span>
-            </div>
-
-            <!-- Dropdown menu -->
-            <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
+          <div class="condition-wrapper">
+            <label for="condition-btn" class="hidden">Condition</label> 
+            <select @change=${this._changeCondition} id="condition-btn">
+              <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
-                return html`<div @click=${this._changeCondition} class="condition" id=${key}><span class="special-character">${unsafeHTML(condition.icon)}</span>${condition.name}</div>`
+                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
               })}
-            </div>
+            </select> 
           </div>
 
           <div class="form-check form-check-inline">

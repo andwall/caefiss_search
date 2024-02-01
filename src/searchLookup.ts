@@ -65,10 +65,7 @@ export class LookupSearch extends LitElement {
   @property({type: Array, attribute: false}) private filterData: string[] = [];
 
   /*Used for styling purposes */
-  @property({attribute: false}) private isDropDownOpen: boolean = false;
-  @property({attribute: false}) private conditionKey: number = 0;
   @property({attribute: false}) private isLookupValue: boolean = false;
-  @query('.dropdown-wrapper') private dropDownContainer?: HTMLElement; 
   @query('.lookup-wrapper') private lookupWrapper?: HTMLElement;
   @query('.select-btn-input') private selectBtnInput?: HTMLInputElement;
   @query('.lookup-option') private lookupOption?: HTMLElement;
@@ -84,78 +81,35 @@ export class LookupSearch extends LitElement {
       box-sizing: border-box;
       padding: 0;
       margin: 0;
-      font: inherit;
+      font-family: inherit;
     }
 
-    .main-container{
+    #main-container{
       width: 100%;
     }
 
-    /* Dropdown styling */
-    .dropdown-wrapper{
-      position: relative;
-      font-size: 12px;
-      width: min-content;
+    .hidden{
+      display: none;
     }
 
-    .dropdown-btn{
-      padding: 8px 8px;
+    /* Condition dropdown styling */
+    #condition-btn{
+      font-size: 16px;
+      width: 3.3em;
+      height: auto; 
+      padding: 5px;
       background: #2d2d2d;
       border-radius: 5px;
-      width: min-content;
       white-space: nowrap; 
       color: white;
       cursor: pointer;
-    }
-
-    .dropdown-menu{
-      width: max-content;
-      background-color: #2d2d2d;
-      border-radius: 5px;
-      margin-top: 2px;
-      box-shadow: 0 5px 10px rgba(0,0,0,0.15);
-      display: none;
-      position: absolute;
-      z-index: 10;
-    }
-
-    .dropdown-menu.open{
-      display: block;
-    }
-
-    .dropdown-menu .condition{
-      padding: 6px 10px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .dropdown-menu .condition:hover{
-      background-color: #1967d2;
-    }
-
-    .special-character{
-      padding-right: 5px;
-    }
-
-    .condition, .special-character{
-      color: white;
-      font-size: 14px;
-    }
-
-    /* Main content */
-    .lookup-wrapper{
-      position: relative;
-      width: 100%;
+      border: 2px solid transparent;
     }
     
-    .lookup-wrapper.active .select-btn{
-      border: 1px solid #66afe9;
-      box-shadow: 0 0px 8px rgba(102, 175, 233, .45)
-    }
-    
-    .lookup-wrapper.active .lookup-content{
-      display: block;
-      border: 1px solid #66afe9;
+    #condition-btn:focus{
+      border: 2px solid #66afe9;
+      box-shadow: 0 0px 8px rgba(102,175,233,.45);
+      outline: none;
     }
     
     /* Select button */
@@ -189,7 +143,7 @@ export class LookupSearch extends LitElement {
     
     .lookup-wrapper.active .select-btn{
       border: 1px solid #66afe9;
-      box-shadow: 0 0px 8px rgba(102, 175, 233, .45);
+      box-shadow: 0 0px 8px rgba(102, 175, 233, .45)
     }
     
     .lookup-wrapper.active .lookup-content{
@@ -197,7 +151,6 @@ export class LookupSearch extends LitElement {
       border: 1px solid #66afe9;
     }
 
-    /* Lookup content */ 
     .lookup-content{
       position: absolute;
       width: 100%;
@@ -317,6 +270,7 @@ export class LookupSearch extends LitElement {
     .arrow-container{
       padding-left: 10px;
     }
+
     .arrow-white{
       border: solid white;
       border-width: 0 2px 2px 0;
@@ -346,7 +300,7 @@ export class LookupSearch extends LitElement {
 
   /** 
    * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and close necessary drop downs
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and closes lookup dropdown
    * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
   */
   override connectedCallback(): void {
@@ -383,9 +337,6 @@ export class LookupSearch extends LitElement {
   * Note: currently using hardcoded lookup 
   */
   _getData(lookupType: string){
-
-    //(lookupType === "lookup data" ? (use util.getLookup()) : use util.getOptionSet)
-
     /* Using hard coded values for now (Jan 24th) */
     // let util = new CAEFISS();
     // if(lookupType === "lookupdata"){
@@ -426,11 +377,9 @@ export class LookupSearch extends LitElement {
   }
 
   _changeCondition(event: Event){
-    const clickedEl = event.target as HTMLElement;
-    this.conditionKey = Number(clickedEl.id)
-    this.condition = this.conditions[this.conditionKey].condition;
-    this._toggleDropDown();
-    
+    const clickedEl = event.target as HTMLSelectElement;
+    let selectedIndex = Number(clickedEl.selectedIndex)
+    this.condition = this.conditions[selectedIndex].condition;
     if(this.operation === Operation.Change)
       this._dispatchMyEvent();
   }
@@ -468,9 +417,6 @@ export class LookupSearch extends LitElement {
   /* Helper Functions */
   _localClickAway(event: Event){
     let currEl = event.target as HTMLElement;
-    if(!(this.dropDownContainer?.contains(currEl)) && this.isDropDownOpen){
-      this._toggleDropDown();
-    } 
     if(!(this.lookupWrapper?.contains(currEl)) && this.lookupWrapper?.classList.contains('active')){
       this._toggleLookup();
     } 
@@ -479,18 +425,11 @@ export class LookupSearch extends LitElement {
   _globalClickAway(event: Event){
     let currEl = event.target as LookupSearch;
     if(!(currEl.uniqueRef === this.uniqueRef)){
-      if(this.isDropDownOpen){
-        this._toggleDropDown();
-      }
       if(this.lookupWrapper?.classList.contains('active')){
         this._toggleLookup();
       }
     }
   } 
-
-  _toggleDropDown(){
-    this.isDropDownOpen = !this.isDropDownOpen;
-  }
   
   _toggleLookup(){
     this.lookupWrapper?.classList.toggle('active');
@@ -519,20 +458,19 @@ export class LookupSearch extends LitElement {
 
   override render(){
     return html `
-      <div id="mainContent" ${ref(this.uniqueRef)} @click=${this._localClickAway} class="main-container">
-
+      <div id="mainContent" ${ref(this.uniqueRef)} @click=${this._localClickAway} id="main-container">
+        <div class="display-name-container">
+          <h3>${this.displayName}</h3>
+        </div>
         <!-- Drop down (conditions) -->
-        <div class="dropdown-wrapper">
-          <div @click=${this._toggleDropDown} class="dropdown-btn" id="condition-btn">
-            <span id="selected-item" class="special-character">${unsafeHTML(this.conditions[this.conditionKey].icon)}</span>
-            <span><i class="arrow-white down"></i></span>
-          </div>
-
-          <div class="dropdown-menu ${this.isDropDownOpen ? 'open' : ''}">
+        <div class="condition-wrapper">
+          <label for="condition-btn" class="hidden">Condition</label> 
+          <select @change=${this._changeCondition} id="condition-btn">
+            <!-- Populate conditions -->
             ${this.conditions?.map((condition, key) => {
-              return html `<div @click=${this._changeCondition} class="condition" id=${key}><span class="special-character">${unsafeHTML(condition.icon)}</span>${condition.name}</div>`
+              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
             })}
-          </div>
+          </select> 
         </div>
        
         <!-- Drop down (lookup) -->
