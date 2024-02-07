@@ -27,6 +27,7 @@ enum Condition {
 type SearchEvent = {
     type: SearchTypes;
     parentEntityName: string;
+    parentEntityId: string;
     to: string;
     entityName: string;
     from: string;
@@ -48,4 +49,5 @@ type EntityInfo = {
     include: boolean;
 }
 
-export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo};
+export { SearchTypes, Operation, Condition };
+export type { SearchEvent, EntityInfo };
