@@ -74,6 +74,20 @@ export class TwoOptionSearch extends LitElement {
       display: none;
     }
 
+    .visually-hidden { 
+      border: 0;
+      padding: 0;
+      margin: 0;
+      position: absolute !important;
+      height: 1px; 
+      width: 1px;
+      overflow: hidden;
+      clip: rect(1px 1px 1px 1px); /* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
+      clip: rect(1px, 1px, 1px, 1px); /*maybe deprecated but we need to support legacy browsers */
+      clip-path: inset(50%); /*modern browsers, clip-path works inwards from each corner*/
+      white-space: nowrap; /* added line to stop words getting smushed together (as they go onto seperate lines and some screen readers do not understand line feeds as a space */
+    }
+
     .container{
       display: flex;
       gap: 2px;
@@ -85,6 +99,10 @@ export class TwoOptionSearch extends LitElement {
       display: flex;
       gap: 5px;
       align-items: center;
+    }    
+    
+    #display-name{
+      font-weight: bold;
     }
 
     .checkbox-container{
@@ -180,7 +198,13 @@ export class TwoOptionSearch extends LitElement {
       [type="checkbox"]:not(:checked):focus + label:before {
         // border: 3px solid #0535d2;
         border: 3px solid #66afe9;
-      }
+      }    
+      
+      [type="checkbox"]:checked:focus + label:before {
+      // border: 3px solid #0535d2;
+      border: 3px solid #66afe9;
+    }
+    
 
     }
 
@@ -224,14 +248,14 @@ export class TwoOptionSearch extends LitElement {
     super.disconnectedCallback();
   }
 
-  _click1(event: Event) {
+  _click1(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.option1 = input.value;
     this.operation = Operation.Change;
     this._dispatchMyEvent();
   }
 
-  _click2(event: Event) {
+  _click2(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.option2 = input.value;
     this.operation = Operation.Change;
@@ -245,12 +269,13 @@ export class TwoOptionSearch extends LitElement {
     this._dispatchMyEvent();
   }
 
-  _dispatchMyEvent() {
+  _dispatchMyEvent(): void {
     let evt: SearchEvent = {
       type: SearchTypes.twoOption,
       entityName: this.entityName,
       from: this.from,
       parentEntityName: this.parentEntityName,
+      parentEntityId: '',
       to: this.to,
       fieldName: this.fieldName,
       displayName: this.displayName,
@@ -271,7 +296,7 @@ export class TwoOptionSearch extends LitElement {
     this.dispatchEvent(searchChangeEvent);
   }
 
-  _setChecked(event: Event){
+  _setChecked(event: Event): void {
     let currEl = event.target as HTMLInputElement;
     let isChecked = currEl.checked;  
     this.checked.include = isChecked ? true : false;
@@ -286,29 +311,29 @@ export class TwoOptionSearch extends LitElement {
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
             <input @click=${this._setChecked} type="checkbox" id="checkbox" />
-            <label for="checkbox"></label>
+            <label for="checkbox"><span class="visually-hidden">Include in output</span></label>
           </div>
-            <h3>${this.displayName}</h3>
+            <h4 id="display-name">${this.displayName}</h4>
         </div>
 
         <div class="container">
           <div class="condition-wrapper">
-            <label for="condition-btn" class="hidden">Condition</label> 
+            <label for="condition-btn" class="visually-hidden">Condition</label> 
             <select @change=${this._changeCondition} id="condition-btn">
               <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
-                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id} aria-label="${condition.name}">${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
               })}
             </select> 
           </div>
 
           <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="inlineCheckbox1" @click=${this._click1} value="${this.option1}">
+            <input class="form-check-input" type="checkbox" id="inlineCheckbox1" @click=${this._click1} value="${this.option1}" aria-labelledby="display-name">
             <label class="form-check-label" for="inlineCheckbox1">${this.option1text}</label>
           </div>
 
           <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="inlineCheckbox2" @click=${this._click1} value="${this.option2}">
+            <input class="form-check-input" type="checkbox" id="inlineCheckbox2" @click=${this._click1} value="${this.option2}" aria-labelledby="display-name">
             <label class="form-check-label" for="inlineCheckbox2">${this.option2text}</label>
           </div>
 

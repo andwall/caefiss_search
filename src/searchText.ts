@@ -65,10 +65,28 @@ export class TextSearch extends LitElement {
 
     #main-container{
       width: 100%;
+    }    
+    
+    #display-name{
+      font-weight: bold;
     }
     
     .hidden{
       display: none;
+    }    
+    
+    .visually-hidden { 
+      border: 0;
+      padding: 0;
+      margin: 0;
+      position: absolute !important;
+      height: 1px; 
+      width: 1px;
+      overflow: hidden;
+      clip: rect(1px 1px 1px 1px); /* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
+      clip: rect(1px, 1px, 1px, 1px); /*maybe deprecated but we need to support legacy browsers */
+      clip-path: inset(50%); /*modern browsers, clip-path works inwards from each corner*/
+      white-space: nowrap; /* added line to stop words getting smushed together (as they go onto seperate lines and some screen readers do not understand line feeds as a space */
     }
 
     /* Display name styling */
@@ -165,6 +183,11 @@ export class TextSearch extends LitElement {
     [type="checkbox"]:not(:checked):focus + label:before {
       // border: 3px solid #0535d2;
       border: 3px solid #66afe9;
+    }    
+    
+    [type="checkbox"]:checked:focus + label:before {
+      // border: 3px solid #0535d2;
+      border: 3px solid #66afe9;
     }
     
     /* hover style just for information */
@@ -230,14 +253,14 @@ export class TextSearch extends LitElement {
     super.disconnectedCallback();
   }
 
-  _changeMessage(event: Event){
+  _changeMessage(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.findText = input.value; 
     this.operation = this.findText ? Operation.Change : Operation.Delete; //check if the value is empty
     this._dispatchMyEvent();
   }
   
-  _changeCondition(e: Event){
+  _changeCondition(e: Event): void {
     const clickedEl = e.target as HTMLSelectElement;
     let selectedIndex = Number(clickedEl.selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
@@ -245,12 +268,13 @@ export class TextSearch extends LitElement {
       this._dispatchMyEvent();
   }
 
-  _dispatchMyEvent(){
+  _dispatchMyEvent(): void {
     let evt: SearchEvent = {
       type: SearchTypes.Text,
       entityName: this.entityName,
       from: this.from,
       parentEntityName: this.parentEntityName,
+      parentEntityId: '',
       to: this.to,
       fieldName: this.fieldName,
       displayName: this.displayName,
@@ -271,7 +295,7 @@ export class TextSearch extends LitElement {
     this.dispatchEvent(searchChangeEvent);
   }
   
-  _setChecked(event: Event){
+  _setChecked(event: Event): void {
     let currEl = event.target as HTMLInputElement;
     let isChecked = currEl.checked; 
     this.checked.include = isChecked ? true : false;
@@ -285,25 +309,25 @@ export class TextSearch extends LitElement {
 
         <!-- Custom Checkbox -->
         <div class="checkbox-container">
-          <input @click=${this._setChecked} type="checkbox" id="checkbox" />
-          <label for="checkbox"></label>
+          <input @click=${this._setChecked} type="checkbox" id="checkbox" aria-labelledby="display-name checkbox-label"/>
+          <label for="checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
         </div>
-          <h3>${this.displayName}</h3>
+          <h4 id="display-name">${this.displayName}</h4>
       </div>
       
       <!-- Conditions & input container -->
       <div class="input-container">
         <div class="condition-wrapper">
-          <label for="condition-btn" class="hidden">Condition</label> 
-          <select @change=${this._changeCondition} id="condition-btn">
+          <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
+          <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
             <!-- Populate conditions -->
             ${this.conditions?.map((condition, key) => {
-              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id} aria-label="${condition.name}">${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
             })}
           </select> 
         </div>
         
-        <input @change=${this._changeMessage} type="text" class="input"></input>
+        <input @change=${this._changeMessage} type="text" class="input" id="search-text" aria-labelledby="display-name"></input>
       </div>
     </div>
     `;

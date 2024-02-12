@@ -76,10 +76,34 @@ export class DateSearch extends LitElement{
       display: none;
     } 
 
+    .visually-hidden { 
+      border: 0;
+      padding: 0;
+      margin: 0;
+      position: absolute !important;
+      height: 1px; 
+      width: 1px;
+      overflow: hidden;
+      clip: rect(1px 1px 1px 1px); /* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
+      clip: rect(1px, 1px, 1px, 1px); /*maybe deprecated but we need to support legacy browsers */
+      clip-path: inset(50%); /*modern browsers, clip-path works inwards from each corner*/
+      white-space: nowrap; /* added line to stop words getting smushed together (as they go onto seperate lines and some screen readers do not understand line feeds as a space */
+    }
+
+    /* Display name styling */
     .display-name-container{
       display: flex;
       gap: 5px;
       align-items: center;
+    }
+
+    #display-name{
+      font-weight: bold;
+    }
+
+    .date-format{
+      font-weight: normal;
+      font-style: italic;
     }
 
     .checkbox-container{
@@ -169,6 +193,11 @@ export class DateSearch extends LitElement{
     [type="checkbox"]:not(:checked):focus + label:before {
       // border: 3px solid #0535d2;
       border: 3px solid #66afe9;
+    }    
+    
+    [type="checkbox"]:checked:focus + label:before {
+      // border: 3px solid #0535d2;
+      border: 3px solid #66afe9;
     }
     
     /* hover style just for information */
@@ -185,14 +214,20 @@ export class DateSearch extends LitElement{
 
     .date-search-wrapper{
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 5px;
+      // gap: 5px;
       width: 100%;
+    }
+
+    .dash{
+      width: 2%;
+      text-align: center;
     }
     
     input[type=date]{
-      width: 100%;
-      height: 100%; 
+      width: 49%;
+      height: min-content;
       padding: 6px;
       -webkit-transition: 0.15s;
       transition: 0.15s;
@@ -242,7 +277,7 @@ export class DateSearch extends LitElement{
     super.disconnectedCallback();
   }
   
-  _changeDate(event: Event){
+  _changeDate(event: Event): void{
     const target = event.target as HTMLInputElement;
     let date = target.value as unknown as Date; 
     target.id === "date1" ? this.date1 = date : this.date2 = date;
@@ -250,7 +285,7 @@ export class DateSearch extends LitElement{
     this._dispatchMyEvent();
   }
 
-  _changeCondition(event: Event){
+  _changeCondition(event: Event): void{
     const clickedEl = event.target as HTMLSelectElement;
     let selectedIndex = Number(clickedEl.selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
@@ -258,7 +293,7 @@ export class DateSearch extends LitElement{
       this._dispatchMyEvent();
   }
 
-  _generateFindText(){
+  _generateFindText(): string{
     let findText = "";
     if(this.date1 && !this.date2){
       findText = this.date1.toString();
@@ -270,7 +305,7 @@ export class DateSearch extends LitElement{
     return findText;
   }
 
-  _dispatchMyEvent(){
+  _dispatchMyEvent(): void{
     let findText = this._generateFindText();
 
     let evt: SearchEvent = {
@@ -278,6 +313,7 @@ export class DateSearch extends LitElement{
       entityName: this.entityName,
       from: this.from,
       parentEntityName: this.parentEntityName,
+      parentEntityId: '',
       to: this.to,
       fieldName: this.fieldName,
       displayName: this.displayName,
@@ -298,11 +334,19 @@ export class DateSearch extends LitElement{
     this.dispatchEvent(searchChangeEvent);
   }
   
-  _setChecked(event: Event){
+  _setChecked(event: Event): void{
     let currEl = event.target as HTMLInputElement;
     let isChecked = currEl.checked; 
     this.checked.include = isChecked ? true : false;
     this._dispatchMyEvent();
+  }
+
+  _processDisplayName(): string{
+    if(this.displayName.indexOf('(YYYY') > -1){
+      return `${this.displayName.slice(0, this.displayName.indexOf('(YYYY'))} <span class="date-format" aria-hidden="true">${this.displayName.slice(this.displayName.indexOf('(YYYY'))}</span>`;
+    }else{
+      return this.displayName;
+    }
   }
 
   override render(){
@@ -311,29 +355,29 @@ export class DateSearch extends LitElement{
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
-            <input @click=${this._setChecked} type="checkbox" id="checkbox" />
-            <label for="checkbox"></label>
+            <input @click=${this._setChecked} type="checkbox" id="checkbox" aria-labelledby="display-name checkbox-label"/>
+            <label for="checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
           </div>
-            <h3>${ this.displayName }</h3>
+            <h4 id="display-name">${unsafeHTML(this._processDisplayName())}</h4>
         </div>
       
         <!-- Conditions & Input Container -->
         <div class="input-container">
           <div class="condition-wrapper">
-            <label for="condition-btn" class="hidden">Condition</label> 
-            <select @change=${this._changeCondition} id="condition-btn">
+            <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
+            <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
               <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
-                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id} aria-label="${condition.name}">${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
               })}
             </select> 
           </div>
 
           <!-- Date Search --> 
           <div class="date-search-wrapper">
-              <input @change=${ this._changeDate } type="date" class="input" id="date1"></input>
+              <input @change=${ this._changeDate } type="date" class="input" id="date1" aria-labelledby="display-name"></input>
               <span class="dash">-</span>
-              <input @change=${ this._changeDate } type="date" class="input" id="date2"></input>
+              <input @change=${ this._changeDate } type="date" class="input" id="date2" aria-labelledby="display-name"></input>
           </div>
         </div>
       </div>
