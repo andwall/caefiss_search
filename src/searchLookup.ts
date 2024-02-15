@@ -136,7 +136,7 @@ export class LookupSearch extends LitElement {
       outline: none;
     }
     
-    /* Select button */
+    /* Select button - opening and closing drop down */
     .select-btn-input:focus + .select-btn{
       border: 1px solid #66afe9;
       box-shadow: 0 0px 8px rgba(102, 175, 233, .45);
@@ -157,7 +157,7 @@ export class LookupSearch extends LitElement {
     }
 
     .select-btn{
-      min-width: 150px;
+      min-width: 135px;
       width: 100%;
       padding: 6px 10px;
       border-radius: 6px; 
@@ -441,13 +441,12 @@ export class LookupSearch extends LitElement {
     //     }
     //   });
     // }
-
     for(let i = 0; i < 12; i++) tempSet.add('Option ' + i);
     this.lookupData = [...tempSet];
   }
 
   _dispatchMyEvent(): void {
-    this._changeMessage();
+    this._generateFindText();
     let evt: SearchEvent = {
       type: SearchTypes.Lookup,
       entityName: this.entityName,
@@ -482,8 +481,9 @@ export class LookupSearch extends LitElement {
       this._dispatchMyEvent();
   }
 
-  _changeMessage(): void {
-    this.findText = this.selectedData.length > 0 ? this.selectedData[0] : ""; // only adding first el    
+  _generateFindText(): void {
+    this.findText = this.selectedData.join();
+    console.log(this.findText); 
     this.operation = this.findText || this.condition === Condition.NotIn ? Operation.Change : Operation.Delete; //check if the value is empty
   }
   
@@ -598,7 +598,7 @@ export class LookupSearch extends LitElement {
           <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
             <!-- Populate conditions -->
             ${this.conditions?.map((condition, key) => {
-              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id} aria-label="${condition.name}">${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
             })}
           </select> 
         </div>

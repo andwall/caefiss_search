@@ -368,7 +368,7 @@ export class DateSearch extends LitElement{
             <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
               <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
-                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id} aria-label="${condition.name}">${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
               })}
             </select> 
           </div>
