@@ -432,18 +432,16 @@ export class LookupSearch extends LitElement {
    /* Responsible for fetching lookup data */
   _getData(lookupType: string): void {
     let tempSet: Set<string> = new Set<string>();
-    // let util = new CAEFISS();
+    let util = new CAEFISS();
     
-    // if(lookupType === "lookupdata"){ //need to update when option is available
-    //   let data = util.getLookup(this.entityName, this.fieldName);
-    //   data.forEach((d) => {
-    //     if(d){
-    //       tempSet.add(d);
-    //     }
-    //   });
-    // }
-
-    for(let i = 0; i < 12; i++) tempSet.add(`Option ${i}`);
+    if(lookupType === "lookupdata"){ //need to update when option is available
+      let data = util.getLookup(this.entityName, this.fieldName);
+      data.forEach((d) => {
+        if(d){
+          tempSet.add(d);
+        }
+      });
+    }
     this.lookupData = [...tempSet];
   }
 
