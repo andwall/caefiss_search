@@ -33,16 +33,16 @@ export class TwoOptionSearch extends LitElement {
   @property({ attribute: false })
   operation: Operation = Operation.Change;
 
-  @property({ attribute: "YES" })
+  @property()
   option1: string = "YES";
 
-  @property({ attribute: "NO" })
+  @property()
   option2: string = "NO";
 
-  @property({ attribute: false })
+  @property()
   option1text: string = "YES";
 
-  @property({ attribute: false })
+  @property()
   option2text: string = "NO";
 
   @property({ attribute: false })
@@ -328,13 +328,13 @@ export class TwoOptionSearch extends LitElement {
           </div>
 
           <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="inlineCheckbox1" @click=${this._click1} value="${this.option1}" aria-labelledby="display-name option1-label">
-            <label class="form-check-label" id="option1-label" for="inlineCheckbox1">${this.option1text}</label>
+            <input class="form-check-input" type="checkbox" id="inlineCheckbox1" @click=${this._click1} value="${this.option1}" aria-labelledby="display-name option-label1">
+            <label class="form-check-label" id="option-label1" for="inlineCheckbox1">${this.option1text}</label>
           </div>
 
           <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="inlineCheckbox2" @click=${this._click1} value="${this.option2}" aria-labelledby="display-name option2-label">
-            <label class="form-check-label" id="option2-label" for="inlineCheckbox2">${this.option2text}</label>
+            <input class="form-check-input" type="checkbox" id="inlineCheckbox2" @click=${this._click1} value="${this.option2}" aria-labelledby="display-name option-label2">
+            <label class="form-check-label" id="option-label2" for="inlineCheckbox2">${this.option2text}</label>
           </div>
 
         </div>

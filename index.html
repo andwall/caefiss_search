@@ -10,6 +10,7 @@
     <script type="module" src="/src/searchDate.ts"></script>
     <script type="module" src="/src/searchLookup.ts"></script>
     <script type="module" src="/src/searchTwoOption.ts"></script>
+    <script type="module" src="/src/searchCheckbox.ts"></script>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
@@ -126,6 +127,13 @@
                 <search-twooption displayName="Comments" entityName="incident" fieldName="caefiss_ati_comments"></search-twooption>
               </div>
             </div>
+            
+            <div class="row">
+              <div class="col-sm-12">
+                <search-checkbox id="searchCheckbox" displayName="Search Checkbox" entityName="incident" fieldName="caefiss_ati_comments"></search-checkbox>
+              </div>
+            </div>
+
 
 
           </div>
@@ -184,6 +192,11 @@
       lookupTest.addEventListener('search-lookup-event', (e) => {
         console.log(e.detail);
       });
+
+      let check = document.getElementById('searchCheckbox');
+      check.addEventListener('search-checkbox-event', e => {
+        console.log(e.detail);
+      })
 
     </script>
   </body>

@@ -1,3 +1,5 @@
+import { OptionSet } from './SearchTypes';
+
 export class CAEFISS {
     public getLookup(entity: string, field: string) : string[] {
         var data : string[] = [];
@@ -33,8 +35,8 @@ export class CAEFISS {
     }
 
 
-    public getOptionSet(name : string) : object[] {
-        var data : object[] = [];
+    public getOptionSet(name : string) : OptionSet[] {
+        var data : OptionSet[] = [];
 
         var req = new XMLHttpRequest();
         req.open("GET", globalThis.Xrm.Utility.getGlobalContext().getClientUrl() + `/api/data/v9.2/stringmaps?$select=attributevalue,value&$filter=attributename eq '${name}'`, false);
@@ -54,7 +56,7 @@ export class CAEFISS {
                         var result = results.value[i];
                         var key : string = result["value"];
                         var value : number = result["attributevalue"];
-                        data.push(   { key: key, value: value }    );
+                        data.push(   { key: key, value: value }  as OptionSet  );
                     }
                 } else {
                     // error

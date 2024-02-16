@@ -79,6 +79,7 @@ export class LookupSearch extends LitElement {
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
     { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
+    { id: "notNull", name: "not null", icon: "!&empty;", condition: Condition.NotNull },
     { id: "notIn", name: "not in", icon: "&notni;", condition: Condition.NotIn }
   ]; 
 
@@ -136,7 +137,7 @@ export class LookupSearch extends LitElement {
       outline: none;
     }
     
-    /* Select button - opening and closing drop down */
+    /* Select button - opening and closing drop down*/
     .select-btn-input:focus + .select-btn{
       border: 1px solid #66afe9;
       box-shadow: 0 0px 8px rgba(102, 175, 233, .45);
@@ -441,12 +442,13 @@ export class LookupSearch extends LitElement {
     //     }
     //   });
     // }
-    for(let i = 0; i < 12; i++) tempSet.add('Option ' + i);
+
+    for(let i = 0; i < 12; i++) tempSet.add(`Option ${i}`);
     this.lookupData = [...tempSet];
   }
 
   _dispatchMyEvent(): void {
-    this._generateFindText();
+    this._changeMessage();
     let evt: SearchEvent = {
       type: SearchTypes.Lookup,
       entityName: this.entityName,
@@ -481,9 +483,8 @@ export class LookupSearch extends LitElement {
       this._dispatchMyEvent();
   }
 
-  _generateFindText(): void {
-    this.findText = this.selectedData.join();
-    console.log(this.findText); 
+  _changeMessage(): void {
+    this.findText = this.selectedData.toString();
     this.operation = this.findText || this.condition === Condition.NotIn ? Operation.Change : Operation.Delete; //check if the value is empty
   }
   
