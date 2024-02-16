@@ -33,16 +33,16 @@ export class TwoOptionSearch extends LitElement {
   @property({ attribute: false })
   operation: Operation = Operation.Change;
 
-  @property({ attribute: "YES" })
+  @property()
   option1: string = "YES";
 
-  @property({ attribute: "NO" })
+  @property()
   option2: string = "NO";
 
-  @property({ attribute: false })
+  @property()
   option1text: string = "YES";
 
-  @property({ attribute: false })
+  @property()
   option2text: string = "NO";
 
   @property({ attribute: false })
@@ -310,31 +310,31 @@ export class TwoOptionSearch extends LitElement {
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
-            <input @click=${this._setChecked} type="checkbox" id="checkbox" />
-            <label for="checkbox"><span class="visually-hidden">Include in output</span></label>
+            <input @click=${this._setChecked} type="checkbox" id="checkbox" aria-labelledby="display-name checkbox-label"/>
+            <label id="checkbox-label" for="checkbox"><span class="visually-hidden">Include in output</span></label>
           </div>
             <h4 id="display-name">${this.displayName}</h4>
         </div>
 
         <div class="container">
           <div class="condition-wrapper">
-            <label for="condition-btn" class="visually-hidden">Condition</label> 
-            <select @change=${this._changeCondition} id="condition-btn">
+            <label for="condition-btn" id="condition-label" class="visually-hidden">Condition</label> 
+            <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
               <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
-                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id} aria-label="${condition.name}">${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
               })}
             </select> 
           </div>
 
           <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="inlineCheckbox1" @click=${this._click1} value="${this.option1}" aria-labelledby="display-name">
-            <label class="form-check-label" for="inlineCheckbox1">${this.option1text}</label>
+            <input class="form-check-input" type="checkbox" id="inlineCheckbox1" @click=${this._click1} value="${this.option1}" aria-labelledby="display-name option-label1">
+            <label class="form-check-label" id="option-label1" for="inlineCheckbox1">${this.option1text}</label>
           </div>
 
           <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="inlineCheckbox2" @click=${this._click1} value="${this.option2}" aria-labelledby="display-name">
-            <label class="form-check-label" for="inlineCheckbox2">${this.option2text}</label>
+            <input class="form-check-input" type="checkbox" id="inlineCheckbox2" @click=${this._click1} value="${this.option2}" aria-labelledby="display-name option-label2">
+            <label class="form-check-label" id="option-label2" for="inlineCheckbox2">${this.option2text}</label>
           </div>
 
         </div>

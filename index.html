@@ -10,6 +10,7 @@
     <script type="module" src="/src/searchDate.ts"></script>
     <script type="module" src="/src/searchLookup.ts"></script>
     <script type="module" src="/src/searchTwoOption.ts"></script>
+    <script type="module" src="/src/searchCheckbox.ts"></script>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
@@ -109,7 +110,7 @@
             <div class="row">
                           
                 <div class="col-sm-12">
-                  <search-lookup isMultiSelect="true" displayName="Comments" entityName="incident" fieldName="caefiss_ati_comments"></search-lookup>
+                  <search-lookup id="lookupTest" isMultiSelect="true" displayName="Lookup Test" entityName="incident" fieldName="caefiss_ati_comments"></search-lookup>
                 </div>    
                 <!-- <div class="col-sm-12">
                   <search-text displayName="test" entityName="incident" fieldName="caefiss_ati_comments"></search-text>
@@ -120,6 +121,19 @@
               </div>
             
             </div>
+
+            <div class="row">
+              <div class="col-sm-12">
+                <search-twooption displayName="Comments" entityName="incident" fieldName="caefiss_ati_comments"></search-twooption>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-sm-12">
+                <search-checkbox id="searchCheckbox" displayName="Search Checkbox" entityName="incident" fieldName="caefiss_ati_comments"></search-checkbox>
+              </div>
+            </div>
+
 
 
           </div>
@@ -134,44 +148,54 @@
 
 
     <script type="text/javascript">
-      let vNum = document.getElementById('vNumber');
-      let showText = document.getElementById('showText');
-      vNum.addEventListener('search-text-event', (e) =>{
-        console.log(e.detail)
-        showText.innerHTML = e.detail.displayName;
-      })   
+      // let vNum = document.getElementById('vNumber');
+      // let showText = document.getElementById('showText');
+      // vNum.addEventListener('search-text-event', (e) =>{
+      //   console.log(e.detail)
+      //   showText.innerHTML = e.detail.displayName;
+      // })   
       
-      let zNum = document.getElementById('man1');
-      let showText2 = document.getElementById('showText2');
-      zNum.addEventListener('search-text-event', (e) =>{
-        console.log(e.detail)
-        showText2.innerHTML = e.detail.displayName;
-      })
+      // let zNum = document.getElementById('man1');
+      // let showText2 = document.getElementById('showText2');
+      // zNum.addEventListener('search-text-event', (e) =>{
+      //   console.log(e.detail)
+      //   showText2.innerHTML = e.detail.displayName;
+      // })
 
 
-      let searchDate = document.getElementById('searchDate');
-      searchDate.addEventListener('search-date-event', (e) =>{
-        console.log(e.detail)
-      })
+      // let searchDate = document.getElementById('searchDate');
+      // searchDate.addEventListener('search-date-event', (e) =>{
+      //   console.log(e.detail)
+      // })
       
-      let x;
-      let y;
-      let searchLookup = document.getElementById('searchLookup');
-      console.log(searchLookup.attributes)
-      searchLookup.addEventListener('search-lookup-event', (e) => {
-        console.log(e.detail)
-        x = e.detail.context;
-        console.log(x == y)
-      })
+      // let x;
+      // let y;
+      // let searchLookup = document.getElementById('searchLookup');
+      // console.log(searchLookup.attributes)
+      // searchLookup.addEventListener('search-lookup-event', (e) => {
+      //   console.log(e.detail)
+      //   x = e.detail.context;
+      //   console.log(x == y)
+      // })
 
-      let searchLookup2 = document.getElementById('searchLookup2');
-      searchLookup2.addEventListener('search-lookup-event', (e) => {
-        console.log(e.detail)
-      })
+      // let searchLookup2 = document.getElementById('searchLookup2');
+      // searchLookup2.addEventListener('search-lookup-event', (e) => {
+      //   console.log(e.detail)
+      // })
 
-      let searchTwo = document.getElementById('searchTwo');
-      searchTwo.addEventListener('search-twooption-event', (e) => {
-        console.log(e.detail)
+      // let searchTwo = document.getElementById('searchTwo');
+      // searchTwo.addEventListener('search-twooption-event', (e) => {
+      //   console.log(e.detail)
+      // })
+      
+      let lookupTest = document.getElementById('lookupTest');
+      lookupTest.addEventListener('search-lookup-event', (e) => {
+        console.log(e.detail);
+      });
+
+      let check = document.getElementById('searchCheckbox');
+      check.addEventListener('search-checkbox-event', e => {
+        console.log(e.detail);
       })
 
     </script>

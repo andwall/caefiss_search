@@ -1,15 +1,15 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
-import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./SearchTypes";
+import { customElement, property, state } from "lit/decorators.js";
+import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo, OptionSet } from "./SearchTypes";
+import { CAEFISS } from "./utilities";
 /*
- * Class: TextSearch
+ * Class: CheckboxSearch
  * Purpose: 
- *  TextSearch is a lit element that allows user to text search.
+ *  CheckboxSearch is a lit element that allows user to select multiple checkboxes.
 */
-@customElement('search-text')
-export class TextSearch extends LitElement {
- 
+@customElement('search-checkbox')
+export class CheckboxSearch extends LitElement {
+  
   @property()
   entityName: string = '';
 
@@ -31,29 +31,21 @@ export class TextSearch extends LitElement {
   @property()
   alias: string = '';
 
-  @property({attribute: false})
-  context: string = '';
+  @state()
+  private context: string = '';
 
-  @property({attribute: false})
-  operation: Operation = Operation.Delete;
+  @state()
+  private operation: Operation = Operation.Delete;
 
-  @property({attribute: false})
-  findText: string = '';
+  @state()
+  private condition: Condition = Condition.Equal;
 
-  @property({attribute: false})
-  condition: Condition = Condition.Equal;
+  @state()
+  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
 
-  @property({attribute: false})
-  checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-
-  private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
-    { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
-    { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
-    { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains },      
-    { id: "beginsWith", name: "begins with", icon: "A..", condition: Condition.BeginsWith },
-    { id: "endsWith", name: "ends with", icon: "..A", condition: Condition.EndsWith }, 
-    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
-  ]; 
+  /* Responsible for option set data and checked options */
+  @state()
+  private checkedOptions: Map<string, boolean> = new Map<string, boolean>(); 
 
   static override styles = css`
     *{
@@ -68,7 +60,9 @@ export class TextSearch extends LitElement {
     }    
     
     #display-name{
-      font-weight: bold;
+      font-weight: normal;
+      font-size: 20px;
+      color: #2572b4;
     }
     
     .hidden{
@@ -101,21 +95,21 @@ export class TextSearch extends LitElement {
     }
   
     /* Custom checkbox styling */
-    [type="checkbox"]:not(:checked),
-    [type="checkbox"]:checked {
+    .checkbox-container [type="checkbox"]:not(:checked),
+    .checkbox-container [type="checkbox"]:checked {
       position: absolute;
       left: -9999px;
     }
 
-    [type="checkbox"]:not(:checked) + label,
-    [type="checkbox"]:checked + label {
+    .checkbox-container [type="checkbox"]:not(:checked) + label,
+    .checkbox-container [type="checkbox"]:checked + label {
       position: relative;
       padding-left: 1em;
       cursor: pointer;
     }
 
     /* checkbox aspect */
-    [type="checkbox"]:not(:checked) + label:before{
+    .checkbox-container [type="checkbox"]:not(:checked) + label:before{
       content: '';
       position: absolute;
       left: 0; top: 0;
@@ -126,7 +120,7 @@ export class TextSearch extends LitElement {
       box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
     }
 
-    [type="checkbox"]:checked + label:before{
+    .checkbox-container [type="checkbox"]:checked + label:before{
       content: '';
       position: absolute;
       left: 0; top: 0;
@@ -138,8 +132,8 @@ export class TextSearch extends LitElement {
     } 
     
     /* checked mark aspect */
-    [type="checkbox"]:not(:checked) + label::after,
-    [type="checkbox"]:checked + label::after {
+    .checkbox-container [type="checkbox"]:not(:checked) + label::after,
+    .checkbox-container [type="checkbox"]:checked + label::after {
       // content: '✔';
       content: "✓";
       position: absolute;
@@ -153,45 +147,45 @@ export class TextSearch extends LitElement {
     }
 
     /* checked mark aspect changes */
-    [type="checkbox"]:not(:checked) + label:after {
+    .checkbox-container [type="checkbox"]:not(:checked) + label:after {
       opacity: 0;
       transform: scale(0);
     }
 
-    [type="checkbox"]:checked + label:after {
+    .checkbox-container [type="checkbox"]:checked + label:after {
       opacity: 1;
       transform: scale(1);
     }
 
     /* disabled checkbox */
-    [type="checkbox"]:disabled:not(:checked) + label:before,
-    [type="checkbox"]:disabled:checked + label:before {
+    .checkbox-container [type="checkbox"]:disabled:not(:checked) + label:before,
+    .checkbox-container [type="checkbox"]:disabled:checked + label:before {
       box-shadow: none;
       border-color: #bbb;
       background-color: #ddd;
     }
 
-    [type="checkbox"]:disabled:checked + label:after {
+    .checkbox-container [type="checkbox"]:disabled:checked + label:after {
       color: #999;
     }
     
-    [type="checkbox"]:disabled + label {
+    .checkbox-container [type="checkbox"]:disabled + label {
       color: #aaa;
     }
     
     /* accessibility */
-    [type="checkbox"]:not(:checked):focus + label:before {
+    .checkbox-container [type="checkbox"]:not(:checked):focus + label:before {
       // border: 3px solid #0535d2;
       border: 3px solid #66afe9;
     }    
     
-    [type="checkbox"]:checked:focus + label:before {
+    .checkbox-container [type="checkbox"]:checked:focus + label:before {
       // border: 3px solid #0535d2;
       border: 3px solid #66afe9;
     }
     
     /* hover style just for information */
-    label:hover:before {
+    .checkbox-container label:hover:before {
       // border: 3px solid #0535d2!important;
       border: 3px solid #66afe9 !important;
     }
@@ -199,45 +193,23 @@ export class TextSearch extends LitElement {
     /* Input styling */
     .input-container{
       display: flex;
-      gap: 2px;
-    }
-    
-    input[type=text]{
-      width: 100%;
-      padding: 6px;
-      -webkit-transition: 0.15s;
-      transition: 0.15s;
-      border-radius: 6px;
-      border: solid 1px lightgray;
-      outline: none;
-      box-shadow: 0 5px 15px rgba(0,0,0,0,0);  
+      justify-content: space-between;
+      flex-wrap: wrap;
     }
 
-    input[type=text]:focus {
-      border: 1px solid #66afe9;
-      box-shadow: 0 0px 8px rgba(102,175,233,.45);
-      outline: none;
+    /* Search checkboxes */
+    .search-checkbox-container{
+      display: flex;
+      gap: 5px;
+      width: 33.3%;
+      flex-grow: 1;
+      padding: 2.5px 5px;
     }
 
-    /* Condition dropdown styling */
-    #condition-btn{
-      font-size: 16px;
-      width: 3.3em;
-      height: auto; 
-      padding: 5px;
-      background: #2d2d2d;
-      border-radius: 5px;
-      white-space: nowrap; 
-      color: white;
-      cursor: pointer;
-      border: 2px solid transparent;
+    .search-checkbox-container label{
+      font-weight: bold;
     }
     
-    #condition-btn:focus{
-      border: 2px solid #66afe9;
-      box-shadow: 0 0px 8px rgba(102,175,233,.45);
-      outline: none;
-    }
   `;
 
   /** 
@@ -247,30 +219,49 @@ export class TextSearch extends LitElement {
  override connectedCallback(): void {
     super.connectedCallback();
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
+    this._getData();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
   }
 
-  _changeMessage(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.findText = input.value; 
-    this.operation = this.findText ? Operation.Change : Operation.Delete; //check if the value is empty
-    this._dispatchMyEvent();
-  }
-  
-  _changeCondition(e: Event): void {
-    const clickedEl = e.target as HTMLSelectElement;
-    let selectedIndex = Number(clickedEl.selectedIndex);
-    this.condition = this.conditions[selectedIndex].condition;
-    if(this.findText)
-      this._dispatchMyEvent();
+  /* Responsible for getting option set to populate checkboxes */
+  _getData(){
+    // let util = new CAEFISS();
+    // let data: OptionSet[] = util.getOptionSet(this.fieldName); // returns OptionSet[] -> [{key: "", value: 0}]
+    // let seenKeys: Set<string> = new Set<string>();
+    
+    // data.forEach(d => {
+    //   if(!seenKeys.has(d.key)) this.checkedOptions.set(d.key, false);  
+    //   seenKeys.add(d.key);
+    // });
+    
+    for(let i = 0; i < 6; i++){
+      let key = `Option ${i}`;
+      this.checkedOptions.set(key, false);
+    } 
+    console.log(this.checkedOptions)
   }
 
+  _changeMessage(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    input.checked ? this.checkedOptions.set(input.id, true) : this.checkedOptions.set(input.id, false);
+    this._dispatchMyEvent();
+  }
+
+  _deleteOperation(): boolean{
+    for(let key of this.checkedOptions.keys())
+      if(this.checkedOptions.get(key) === true) return false;
+    return true;
+  }
+  
   _dispatchMyEvent(): void {
+    if(this._deleteOperation()) this.operation = Operation.Delete;
+    else this.operation = Operation.Change;
+
     let evt: SearchEvent = {
-      type: SearchTypes.Text,
+      type: SearchTypes.Checkbox,
       entityName: this.entityName,
       from: this.from,
       parentEntityName: this.parentEntityName,
@@ -278,27 +269,26 @@ export class TextSearch extends LitElement {
       to: this.to,
       fieldName: this.fieldName,
       displayName: this.displayName,
-      findText: this.findText,
+      findText: JSON.stringify(Object.fromEntries(this.checkedOptions)),
       condition: this.condition,
       operation: this.operation,
-      context: '',
-      option1: "",
-      option2: "",
+      context: this.context,
+      option1: '',
+      option2: '',
       checked: this.checked
     };
     
-    let searchChangeEvent = new CustomEvent('search-text-event', {
+    let searchChangeEvent = new CustomEvent('search-checkbox-event', {
       detail: evt,
       bubbles: true,
       composed: true 
     });
     this.dispatchEvent(searchChangeEvent);
   }
-  
+ 
+  /* Responsible for setting the "include in output" checkbox" */
   _setChecked(event: Event): void {
-    let currEl = event.target as HTMLInputElement;
-    let isChecked = currEl.checked; 
-    this.checked.include = isChecked ? true : false;
+    this.checked.include = (event.target as HTMLInputElement).checked ? true : false; 
     this._dispatchMyEvent();
   }
 
@@ -317,17 +307,14 @@ export class TextSearch extends LitElement {
       
       <!-- Conditions & input container -->
       <div class="input-container">
-        <div class="condition-wrapper">
-          <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
-          <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
-            <!-- Populate conditions -->
-            ${this.conditions?.map((condition, key) => {
-              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
-            })}
-          </select> 
-        </div>
-        
-        <input @change=${this._changeMessage} type="text" class="input" id="search-text" aria-labelledby="display-name"></input>
+          ${Array.from(this.checkedOptions.keys()).map(key => {
+            return html `
+              <div class="search-checkbox-container">
+                <input @click=${this._changeMessage} type="checkbox" class="checkbox-input" id="${key}"></input>
+                <label for="${key}" class="checkbox-input-label">${key}</label> 
+              </div>
+            `;
+          })}
       </div>
     </div>
     `;

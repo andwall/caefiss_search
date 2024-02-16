@@ -2,7 +2,8 @@ enum SearchTypes {
     Text = "text",
     Date = "date",
     Lookup = "lookup",
-    twoOption = "twooption"
+    twoOption = "twooption",
+    Checkbox = "checkbox"
 }
 
 enum Operation {
@@ -17,6 +18,7 @@ enum Condition {
     BeginsWith="begins-with",
     EndsWith="ends-with",
     Null = "null",
+    NotNull = "not-null",
     On = "on",
     After = "on-or-after",
     Between = "between",
@@ -49,5 +51,10 @@ type EntityInfo = {
     include: boolean;
 }
 
+type OptionSet = {
+    key: string;
+    value: number;
+}
+
 export { SearchTypes, Operation, Condition };
-export type { SearchEvent, EntityInfo };
+export type { SearchEvent, EntityInfo, OptionSet };
