@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./SearchTypes";
 /*
@@ -31,28 +31,35 @@ export class TextSearch extends LitElement {
   @property()
   alias: string = '';
 
-  @property({attribute: false})
-  context: string = '';
+  @property()
+  include: boolean = false;
 
-  @property({attribute: false})
-  operation: Operation = Operation.Delete;
+  @state()
+  private context: string = '';
 
-  @property({attribute: false})
-  findText: string = '';
+  @state()
+  private operation: Operation = Operation.Delete;
 
-  @property({attribute: false})
-  condition: Condition = Condition.Equal;
+  @state()
+  private findText: string = '';
 
-  @property({attribute: false})
-  checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  @state()
+  private condition: Condition = Condition.Equal;
+
+  @state()
+  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+
+  @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
-    { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains },      
+    { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains }, 
+    { id: "not in", name: "not in", icon: "&notni;", condition: Condition.NotIn }, 
     { id: "beginsWith", name: "begins with", icon: "A..", condition: Condition.BeginsWith },
     { id: "endsWith", name: "ends with", icon: "..A", condition: Condition.EndsWith }, 
-    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
+    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
+    { id: "notNull", name: "not null", icon: "!&empty;", condition: Condition.NotNull }
   ]; 
 
   static override styles = css`
@@ -222,7 +229,7 @@ export class TextSearch extends LitElement {
     /* Condition dropdown styling */
     #condition-btn{
       font-size: 16px;
-      width: 3.3em;
+      width: 3.4em;
       height: auto; 
       padding: 5px;
       background: #2d2d2d;
@@ -240,17 +247,11 @@ export class TextSearch extends LitElement {
     }
   `;
 
-  /** 
-   * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) set all checked information given to this component 
-  */
- override connectedCallback(): void {
-    super.connectedCallback();
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
+  protected override firstUpdated(): void {
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this.condition = this.conditions[0].condition;
+    this.includeCheckbox!.checked = this.checked.include;
+    if(this.checked.include) this._dispatchMyEvent();
   }
 
   _changeMessage(event: Event): void {
@@ -261,11 +262,9 @@ export class TextSearch extends LitElement {
   }
   
   _changeCondition(e: Event): void {
-    const clickedEl = e.target as HTMLSelectElement;
-    let selectedIndex = Number(clickedEl.selectedIndex);
+    let selectedIndex = Number((e.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.findText)
-      this._dispatchMyEvent();
+    if(this.findText) this._dispatchMyEvent();
   }
 
   _dispatchMyEvent(): void {
@@ -296,9 +295,7 @@ export class TextSearch extends LitElement {
   }
   
   _setChecked(event: Event): void {
-    let currEl = event.target as HTMLInputElement;
-    let isChecked = currEl.checked; 
-    this.checked.include = isChecked ? true : false;
+    this.checked.include = (event.target as HTMLInputElement).checked ? true : false; 
     this._dispatchMyEvent();
   }
 
@@ -309,8 +306,8 @@ export class TextSearch extends LitElement {
 
         <!-- Custom Checkbox -->
         <div class="checkbox-container">
-          <input @click=${this._setChecked} type="checkbox" id="checkbox" aria-labelledby="display-name checkbox-label"/>
-          <label for="checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+          <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+          <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
         </div>
           <h4 id="display-name">${this.displayName}</h4>
       </div>

@@ -78,9 +78,10 @@ export class LookupSearch extends LitElement {
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
+    { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains},
+    { id: "notIn", name: "not in", icon: "&notni;", condition: Condition.NotIn},
     { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
-    { id: "notNull", name: "not null", icon: "!&empty;", condition: Condition.NotNull },
-    { id: "notIn", name: "not in", icon: "&notni;", condition: Condition.NotIn }
+    { id: "notNull", name: "not null", icon: "!&empty;", condition: Condition.NotNull }
   ]; 
 
   static override styles = css`
@@ -120,7 +121,7 @@ export class LookupSearch extends LitElement {
     /* Condition dropdown styling */
     #condition-btn{
       font-size: 16px;
-      width: 3.3em;
+      width: 3.4em;
       height: auto; 
       padding: 5px;
       background: #2d2d2d;
@@ -370,6 +371,7 @@ export class LookupSearch extends LitElement {
     super.connectedCallback();
     window.addEventListener('mousedown', e => this._globalClickAway(e));
     window.addEventListener('focusin', e => this._globalFocusAway(e));
+    this._getData("lookupdata");
   }
   
   override disconnectedCallback(): void {
@@ -380,7 +382,6 @@ export class LookupSearch extends LitElement {
   
   /* Responsible for various accessibility features and getting/setting data */ 
   override firstUpdated(): void {
-    this._getData("lookupdata");
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
 
     /* Responsible for opening drop down when entering "enter" */
@@ -432,16 +433,18 @@ export class LookupSearch extends LitElement {
    /* Responsible for fetching lookup data */
   _getData(lookupType: string): void {
     let tempSet: Set<string> = new Set<string>();
-    let util = new CAEFISS();
+    // let util = new CAEFISS();
     
-    if(lookupType === "lookupdata"){ //need to update when option is available
-      let data = util.getLookup(this.entityName, this.fieldName);
-      data.forEach((d) => {
-        if(d){
-          tempSet.add(d);
-        }
-      });
-    }
+    // if(lookupType === "lookupdata"){ //need to update when option is available
+    //   let data = util.getLookup(this.entityName, this.fieldName);
+    //   data.forEach((d) => {
+    //     if(d){
+    //       tempSet.add(d);
+    //     }
+    //   });
+    // }
+
+    for(let i = 0; i < 12; i++) tempSet.add(`Option ${i}`);
     this.lookupData = [...tempSet];
   }
 
@@ -488,13 +491,10 @@ export class LookupSearch extends LitElement {
   
   /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
   _addSelectedData(event: Event, isMultiSelect: boolean): void {
-    let currEl = event.target as HTMLElement;
-    let currValue = currEl.innerText; 
+    let currValue = (event.target as HTMLElement).innerText; 
     
     if(!this.selectedData.includes(currValue)){
-      if(!isMultiSelect){
-        this.selectedData = [];
-      }
+      if(!isMultiSelect) this.selectedData = [];
       this.selectedData.push(currValue);
       this._dispatchMyEvent();
     }
@@ -503,7 +503,6 @@ export class LookupSearch extends LitElement {
   }
   
   _removeTag(index: number): void {
-    // console.log("index passed to removeTag() " + index)
     this.selectedData.splice(index, 1);
     this._toggleLookup();
     this._dispatchMyEvent();
@@ -513,10 +512,7 @@ export class LookupSearch extends LitElement {
   /* Responsible for removing a tag when "Enter" is pressed */
   _removeTagOnKey(e: Event, index: number): void {
     if(!((e as KeyboardEvent).key === "Enter")) return;
-    this.selectedData.splice(index, 1);
-    this._toggleLookup();
-    this._dispatchMyEvent();
-    this.requestUpdate();
+    this._removeTag(index); 
   }
 
   /* Helper Functions */
@@ -604,8 +600,6 @@ export class LookupSearch extends LitElement {
        
         <!-- Drop down (lookup) -->
         <div class="lookup-wrapper">
-          <!-- Used for accessibility (tab through) -->
-          <!-- <input id="search-lookup-dropdown" type="button" class="select-btn-input"/> -->
           <div @click=${this._toggleLookup} tabindex="0" role="combobox" class="select-btn" aria-haspopup="listbox" aria-expanded="${this._isActive()}" aria-label="${this.displayName} lookup dropdown">
             <span class="tag-container">${this.selectedData.map((data, key) => { 
               return this._generateTag(data, key); 

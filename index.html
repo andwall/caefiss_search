@@ -11,6 +11,7 @@
     <script type="module" src="/src/searchLookup.ts"></script>
     <script type="module" src="/src/searchTwoOption.ts"></script>
     <script type="module" src="/src/searchCheckbox.ts"></script>
+    <script type="module" src="/src/searchOption.ts"></script>
     <link rel="stylesheet" href="/src/styles/styles.css" />
   </head>
   <body>
@@ -133,19 +134,16 @@
                 <search-checkbox id="searchCheckbox" displayName="Search Checkbox" entityName="incident" fieldName="caefiss_ati_comments"></search-checkbox>
               </div>
             </div>
-
-
-
+            
+            <div class="row">
+              <div class="col-sm-12">
+                <search-option id="searchOption" displayName="Search Option" entityName="incident" fieldName="caefiss_ati_comments"></search-option>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      
     </div>
-    
-    <!-- <p tabindex="0" class="visually-hidden">end of content</p> -->
-    <!-- <p tabindex="0">end of content</p> -->
-
-
 
     <script type="text/javascript">
       // let vNum = document.getElementById('vNumber');
@@ -196,7 +194,16 @@
       let check = document.getElementById('searchCheckbox');
       check.addEventListener('search-checkbox-event', e => {
         console.log(e.detail);
-      })
+      });
+
+      let searchOption = document.getElementById('searchOption');
+      searchOption.addEventListener('search-option-event', e => {
+        console.log(e.detail);
+      });
+
+      window.addEventListener('focus', e => {
+        if(e.target) console.log(e.target);
+      }, true);
 
     </script>
   </body>
