@@ -3,7 +3,8 @@ enum SearchTypes {
     Date = "date",
     Lookup = "lookup",
     twoOption = "twooption",
-    Checkbox = "checkbox"
+    Checkbox = "checkbox",
+    Option = "option"
 }
 
 enum Operation {
@@ -56,4 +57,5 @@ type OptionSet = {
     value: number;
 }
 
-export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo, OptionSet};
+export { SearchTypes, Operation, Condition };
+export type { SearchEvent, EntityInfo, OptionSet };

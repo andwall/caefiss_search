@@ -1,5 +1,5 @@
-import { LitElement, html, css } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { LitElement, html, css, PropertyValueMap } from "lit";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo, OptionSet } from "./SearchTypes";
 import { CAEFISS } from "./utilities";
 /*
@@ -31,6 +31,9 @@ export class CheckboxSearch extends LitElement {
   @property()
   alias: string = '';
 
+  @property()
+  include: boolean = false;
+
   @state()
   private context: string = '';
 
@@ -46,6 +49,9 @@ export class CheckboxSearch extends LitElement {
   /* Responsible for option set data and checked options */
   @state()
   private checkedOptions: Map<string, boolean> = new Map<string, boolean>(); 
+
+  @query('#include-checkbox')
+  private includeCheckbox?: HTMLInputElement;
 
   static override styles = css`
     *{
@@ -218,12 +224,17 @@ export class CheckboxSearch extends LitElement {
   */
  override connectedCallback(): void {
     super.connectedCallback();
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
     this._getData();
   }
-
+  
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+  }
+  
+  protected override firstUpdated(): void {
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this.includeCheckbox!.checked = this.checked.include;
+    if(this.checked.include) this._dispatchMyEvent();
   }
 
   /* Responsible for getting option set to populate checkboxes */
@@ -241,7 +252,6 @@ export class CheckboxSearch extends LitElement {
     //   let key = `Option ${i}`;
     //   this.checkedOptions.set(key, false);
     // } 
-    console.log(this.checkedOptions)
   }
 
   _changeMessage(event: Event): void {
@@ -299,8 +309,8 @@ export class CheckboxSearch extends LitElement {
 
         <!-- Custom Checkbox -->
         <div class="checkbox-container">
-          <input @click=${this._setChecked} type="checkbox" id="checkbox" aria-labelledby="display-name checkbox-label"/>
-          <label for="checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+          <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+          <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
         </div>
           <h4 id="display-name">${this.displayName}</h4>
       </div>

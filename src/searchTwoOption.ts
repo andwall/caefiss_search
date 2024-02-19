@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./SearchTypes";
 
@@ -27,12 +27,6 @@ export class TwoOptionSearch extends LitElement {
   @property()
   alias: string = '';
 
-  @property({ attribute: false })
-  context: string = '';
-
-  @property({ attribute: false })
-  operation: Operation = Operation.Change;
-
   @property()
   option1: string = "YES";
 
@@ -45,17 +39,30 @@ export class TwoOptionSearch extends LitElement {
   @property()
   option2text: string = "NO";
 
-  @property({ attribute: false })
-  condition: Condition = Condition.Equal;
+  @property()
+  include: boolean = false;
+
+  @state()
+  private context: string = '';
+
+  @state()
+  private operation: Operation = Operation.Change;
+
+  @state()
+  private condition: Condition = Condition.Equal;
   
-  @property({attribute: false})
-  checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  @state()
+  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+
+  @query('#include-checkbox')
+  private includeCheckbox?: HTMLInputElement;
 
   /*Used for styling purposes */
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "in", name: "in", icon: "&ni;", condition: Condition.In },
     { id: "notIn", name: "not in", icon: "&ne;", condition: Condition.NotEqual },
-    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null }
+    { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
+    { id: "notNull", name: "not null", icon: "!&empty;", condition: Condition.NotNull }
   ];
 
   static override styles = css`
@@ -217,7 +224,7 @@ export class TwoOptionSearch extends LitElement {
     /* Condition dropdown styling */
     #condition-btn{
       font-size: 16px;
-      width: 3.3em;
+      width: 3.4em;
       height: auto; 
       padding: 5px;
       background: #2d2d2d;
@@ -235,17 +242,11 @@ export class TwoOptionSearch extends LitElement {
     }
   `;
 
-  /** 
-   * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, set the checked information 
-  */
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
+  protected override firstUpdated(): void {
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this.includeCheckbox!.checked = this.checked.include;
+    if(this.checked.include) this._dispatchMyEvent();
+    
   }
 
   _click1(event: Event): void {
@@ -297,9 +298,7 @@ export class TwoOptionSearch extends LitElement {
   }
 
   _setChecked(event: Event): void {
-    let currEl = event.target as HTMLInputElement;
-    let isChecked = currEl.checked;  
-    this.checked.include = isChecked ? true : false;
+    this.checked.include = (event.target as HTMLInputElement).checked ? true : false; 
     this._dispatchMyEvent();
   }
     
@@ -310,8 +309,8 @@ export class TwoOptionSearch extends LitElement {
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
-            <input @click=${this._setChecked} type="checkbox" id="checkbox" aria-labelledby="display-name checkbox-label"/>
-            <label id="checkbox-label" for="checkbox"><span class="visually-hidden">Include in output</span></label>
+            <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+            <label id="checkbox-label" for="include-checkbox"><span class="visually-hidden">Include in output</span></label>
           </div>
             <h4 id="display-name">${this.displayName}</h4>
         </div>
