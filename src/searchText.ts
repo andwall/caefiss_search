@@ -255,19 +255,22 @@ export class TextSearch extends LitElement {
   }
 
   _changeMessage(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.findText = input.value; 
-    this.operation = this.findText ? Operation.Change : Operation.Delete; //check if the value is empty
+    this.findText = (event.target as HTMLInputElement).value; 
     this._dispatchMyEvent();
   }
   
   _changeCondition(e: Event): void {
     let selectedIndex = Number((e.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.findText) this._dispatchMyEvent();
+    this._dispatchMyEvent();
+  }
+
+  _setOperation(): void{
+    this.operation = this.findText || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete;
   }
 
   _dispatchMyEvent(): void {
+    this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Text,
       entityName: this.entityName,
@@ -323,7 +326,6 @@ export class TextSearch extends LitElement {
             })}
           </select> 
         </div>
-        
         <input @change=${this._changeMessage} type="text" class="input" id="search-text" aria-labelledby="display-name"></input>
       </div>
     </div>

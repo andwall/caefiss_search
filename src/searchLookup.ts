@@ -75,6 +75,7 @@ export class LookupSearch extends LitElement {
   @query('.lookup-wrapper') private lookupWrapper?: HTMLElement;
   @query('#lookup-options-container') private lookupOptionsContainer?: HTMLElement;
   @query('.select-btn') private selectBtn?: HTMLElement;
+
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
@@ -160,8 +161,11 @@ export class LookupSearch extends LitElement {
 
     .select-btn{
       min-width: 135px;
+      min-height: 37px;
       width: 100%;
-      padding: 6px 10px;
+      height: auto;
+      // padding: 6px 12px;
+      padding: 2px 4px;
       border-radius: 6px; 
       border: solid 1px lightgray;
       background: #fff;
@@ -170,9 +174,13 @@ export class LookupSearch extends LitElement {
     }
 
     .select-btn:focus{
-      border: 2px solid #66afe9;
+      border: 2px solid #66afe9 !important;
       box-shadow: 0 0px 8px rgba(102,175,233,.45);
       outline: none;
+    }    
+    
+    .select-btn[aria-expanded="true"]{
+      border: 1px solid #66afe9;
     }
     
     /* Lookup content */
@@ -181,10 +189,10 @@ export class LookupSearch extends LitElement {
       width: 100%;
     }
     
-    .lookup-wrapper.active .select-btn{
-      border: 1px solid #66afe9;
-      box-shadow: 0 0px 8px rgba(102, 175, 233, .45)
-    }
+    // .lookup-wrapper.active .select-btn{
+    //   border: 1px solid #66afe9;
+    //   box-shadow: 0 0px 8px rgba(102, 175, 233, .45)
+    // }
     
     .lookup-wrapper.active .lookup-content{
       display: block;
@@ -297,17 +305,23 @@ export class LookupSearch extends LitElement {
       gap: 5px;
       background-color: #f1f1f1;
       border: black;
-      padding: 6px 12px;
+      // padding: 6px 12px;
+      padding: 2px 6px;
       border-radius: 6px; 
       align-items: center;
       justify-content: space-between;
     }
 
-    .tag-x-container{
+    .tag-x-button{
       width: min-content;
       height: auto;
       text-align: center;
       cursor: pointer;
+      border: none; 
+    }
+    
+    .tag-x-button:hover{
+      background-color: transparent;
     }
 
     .tag-x{
@@ -315,24 +329,24 @@ export class LookupSearch extends LitElement {
       font-weight: 700;
     }
 
-    .tag-x-container:hover .tag-x{
+    .tag-x-button:hover .tag-x{
       color: red;
       font-weight: 700;
     }
    
-    .tag-x-container:focus{
+    .tag-x-button:focus{
       /* border: 2px solid red; */
       outline: none;
     }
     
-    .tag-x-container:focus .tag-x{
+    .tag-x-button:focus .tag-x{
       color: red;
       font-weight: 700;
     }
 
     /* Arrow Styling */
     .arrow-container{
-      padding-left: 10px;
+      padding: 0 10px;
     }
 
     .arrow-white{
@@ -362,22 +376,21 @@ export class LookupSearch extends LitElement {
     }
   `;
 
-  /** 
+  /*
    * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and focus away event - closes lookup dropdown
-   * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and focus away event globally - closes lookup dropdown
   */
   override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('mousedown', e => this._globalClickAway(e));
-    window.addEventListener('focusin', e => this._globalFocusAway(e));
+    window.addEventListener('mousedown', e => this._globalAway(e));
+    window.addEventListener('focusin', e => this._globalAway(e));
     this._getData("lookupdata");
   }
   
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('mousedown', this._globalClickAway);
-    window.removeEventListener('focusin', this._globalFocusAway);
+    window.removeEventListener('mousedown', this._globalAway);
+    window.removeEventListener('focusin', this._globalAway);
   }
   
   /* Responsible for various accessibility features and getting/setting data */ 
@@ -386,45 +399,34 @@ export class LookupSearch extends LitElement {
 
     /* Responsible for opening drop down when entering "enter" */
     this.selectBtn?.addEventListener('keydown', (e) => {
-      if(e.key === "Enter"){
+      if(e.key === "Enter" || e.code === "Space"){
         e.preventDefault();
+        e.stopPropagation();
         this._toggleLookup();
       }
       if(e.key === "Escape"){
-        if(this._isActive()){
-          this._toggleLookup();
-        }
+        e.stopPropagation();
+        if(this._isActive()) this._toggleLookup();
       }
     });
 
     /* Responsible for toggle lookup when out of focus */
     this.lookupOptionsContainer?.addEventListener('blur', (e) => {
-      console.log(e.relatedTarget as HTMLElement)
-      console.log(this.lookupOptionsContainer?.contains(e.relatedTarget as HTMLElement))
-      if (!this.lookupOptionsContainer?.contains(e.relatedTarget as HTMLElement)) {
-        if(this._isActive()){
-          this._toggleLookup();
-        }
+      if(!this.lookupOptionsContainer?.contains(e.relatedTarget as HTMLElement)) {
+        if(this._isActive()) this._toggleLookup();
       }
     }); 
    
     /* Responsible for handling keyboard events on lookup dropdown */
-    this.lookupOptionsContainer?.addEventListener('keydown', (e: Event) => {
-      let event = e as KeyboardEvent;
-      if(event.key === 'ArrowUp' && this.selectedIndex > 0){
+    this.lookupOptionsContainer?.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowUp' && this.selectedIndex > 0){
         e.preventDefault();
-        this.selectedIndex = this.selectedIndex - 1;
-        this._focusOptionAtIndex(this.selectedIndex);
-      } else if(event.key === 'ArrowDown' && this.selectedIndex < this.filterData.length - 1){
+        this._focusOptionAtIndex(--this.selectedIndex);
+      }else if(e.key === 'ArrowDown' && this.selectedIndex < this.filterData.length - 1){
         e.preventDefault();
-        this.selectedIndex = this.selectedIndex + 1;
-        this._focusOptionAtIndex(this.selectedIndex);
-      } else if(event.key === 'Enter' || event.key === 'Spacebar'){ 
-        e.preventDefault();
-        this._addSelectedData(e, this.isMultiSelect);
-        this.requestUpdate();
-        this._toggleLookup();
-      } else if(event.key === 'Escape' && this._isActive()){ 
+        this._focusOptionAtIndex(++this.selectedIndex);
+      }else if(e.key === 'Escape' && this._isActive()){ 
+        e.stopPropagation();
         this._toggleLookup();
       }
     });
@@ -433,23 +435,20 @@ export class LookupSearch extends LitElement {
    /* Responsible for fetching lookup data */
   _getData(lookupType: string): void {
     let tempSet: Set<string> = new Set<string>();
-    // let util = new CAEFISS();
+    let util = new CAEFISS();
     
-    // if(lookupType === "lookupdata"){ //need to update when option is available
-    //   let data = util.getLookup(this.entityName, this.fieldName);
-    //   data.forEach((d) => {
-    //     if(d){
-    //       tempSet.add(d);
-    //     }
-    //   });
-    // }
-
-    for(let i = 0; i < 12; i++) tempSet.add(`Option ${i}`);
+    if(lookupType === "lookupdata"){ //need to update when option is available
+     let data = util.getLookup(this.entityName, this.fieldName);
+     data.forEach((d) => {
+       if(d) tempSet.add(d);
+     });
+    }
     this.lookupData = [...tempSet];
   }
 
   _dispatchMyEvent(): void {
     this._changeMessage();
+    this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Lookup,
       entityName: this.entityName,
@@ -477,20 +476,23 @@ export class LookupSearch extends LitElement {
   }
 
   _changeCondition(event: Event): void {
-    const clickedEl = event.target as HTMLSelectElement;
-    let selectedIndex = Number(clickedEl.selectedIndex);
+    let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.operation === Operation.Change || this.condition === Condition.NotIn)
+    if(this.operation === Operation.Change || this.condition === Condition.NotIn || this.condition === Condition.NotNull) 
       this._dispatchMyEvent();
   }
 
   _changeMessage(): void {
     this.findText = this.selectedData.toString();
-    this.operation = this.findText || this.condition === Condition.NotIn ? Operation.Change : Operation.Delete; //check if the value is empty
+  }
+
+  _setOperation(): void{
+    this.operation = this.findText || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
   }
   
   /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
   _addSelectedData(event: Event, isMultiSelect: boolean): void {
+    event.stopPropagation();
     let currValue = (event.target as HTMLElement).innerText; 
     
     if(!this.selectedData.includes(currValue)){
@@ -500,64 +502,48 @@ export class LookupSearch extends LitElement {
     }
     this.requestUpdate();
     this._toggleLookup();
+    this.selectBtn?.focus();
+  }  
+  
+  /* Responsible for adding selected data on "Enter" */
+  _addSelectedDataOnKey(event: Event, isMultiSelect: boolean): void {
+    if(!((event as KeyboardEvent).key === "Enter")) return;
+    this._addSelectedData(event, isMultiSelect);  
   }
   
-  _removeTag(index: number): void {
+  _removeTag(event: Event, index: number): void {
+    event.stopPropagation(); //stop select btn from receiving event
     this.selectedData.splice(index, 1);
-    this._toggleLookup();
     this._dispatchMyEvent();
-    this.requestUpdate();
+    this.selectBtn?.focus();
   }  
  
   /* Responsible for removing a tag when "Enter" is pressed */
-  _removeTagOnKey(e: Event, index: number): void {
-    if(!((e as KeyboardEvent).key === "Enter")) return;
-    this._removeTag(index); 
+  _removeTagOnKey(event: Event, index: number): void {
+    if(!((event as KeyboardEvent).key === "Enter")) return;
+    this._removeTag(event, index); 
   }
 
   /* Helper Functions */
-  _localClickAway(event: Event): void {
+  _localAway(event: Event): void {
     let currEl = event.target as HTMLElement;
-    if(!(this.lookupWrapper?.contains(currEl)) && this._isActive()){
+    if(!(this.lookupWrapper?.contains(currEl)) && this._isActive())
       this._toggleLookup();
-    } 
   }
  
   /* Responsible for toggling lookup based on click away (outside component) */
-  _globalClickAway(event: Event): void {
-    let currEl = event.target as LookupSearch;
-    if(!(currEl.uniqueRef === this.uniqueRef)){
-      if(this._isActive()){
-        this._toggleLookup();
-      }
-    }
-  } 
-
-  /* Responsible for toggling lookup based on "tabbing" out of component (focus) */
-  _globalFocusAway(event: Event): void {
+  _globalAway(event: Event): void {
     let currEl = event.target as LookupSearch;
     if(!(currEl.uniqueRef === this.uniqueRef)){
       if(this._isActive()) this._toggleLookup();
     }
-  }
-  
+  } 
+
   _toggleLookup(): void {
     this.lookupWrapper?.classList.toggle('active');
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
   }
   
-  /* Generates selected lookup tags */
-  _generateTag(tagName: string, key: number): TemplateResult {
-    return html `
-      <div class="tag-content">
-        <p class="tag-name">${tagName}</p>
-        <div @keydown=${(e: Event) => this._removeTagOnKey(e, key)}  tabindex="0" role="button" @click=${this._removeTag.bind(this, key)} class="tag-x-container" id="${key}">
-          <p aria-label="${tagName} remove" class="tag-x">&times;</p>
-        </div>
-      </div>
-    `; 
-  }
-
   _filterLookup(e: Event): void {
     let currEl = e.target as HTMLInputElement;
     this.isSearchValue = currEl.value ? true : false;
@@ -565,25 +551,34 @@ export class LookupSearch extends LitElement {
       return data.toLowerCase().startsWith(currEl.value.toLowerCase());
     }); 
     !this.isSearchValue ? this.filterData = [] : '';
-    this.requestUpdate();
   }
 
   /* Resposible for focusing the option in the lookup drop down on arrow up/down */
   _focusOptionAtIndex(index: number): void {
     const options = this.shadowRoot?.querySelectorAll('.lookup-option');
-    if(options)
-    if (index >= 0 && index < options.length) {
+    if(options && index >= 0 && index < options.length)
       (options[index] as HTMLElement).focus();
-    }
   }
 
   _isActive(): boolean{
     return this.lookupWrapper?.classList.contains('active') || false;
   }
 
+  /* Generates selected lookup tags */
+  _generateTag(tagName: string, key: number): TemplateResult {
+    return html `
+      <div class="tag-content">
+        <p class="tag-name">${tagName}</p>
+        <button @keydown=${(e: Event) => this._removeTagOnKey(e, key)} @click=${(e: Event) => this._removeTag(e, key)} class="tag-x-button" id="${key}" aria-label="${tagName} remove">
+          <span class="tag-x" aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    `; 
+  }
+
   override render(){
     return html `
-      <div id="mainContent" ${ref(this.uniqueRef)} @click=${this._localClickAway} id="main-container">
+      <div id="mainContent" ${ref(this.uniqueRef)} @click=${this._localAway} id="main-container">
         <div class="display-name-container">
           <h4 id="display-name">${this.displayName}</h4>
         </div>
@@ -593,14 +588,29 @@ export class LookupSearch extends LitElement {
           <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
             <!-- Populate conditions -->
             ${this.conditions?.map((condition, key) => {
-              return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+              return html `
+                <option 
+                  ${key === 0 ? 'selected': ''} 
+                  tabindex="0" 
+                  class="condition-option" 
+                  value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;
+                </option>
+              `
             })}
           </select> 
         </div>
        
         <!-- Drop down (lookup) -->
         <div class="lookup-wrapper">
-          <div @click=${this._toggleLookup} tabindex="0" role="combobox" class="select-btn" aria-haspopup="listbox" aria-expanded="${this._isActive()}" aria-label="${this.displayName} lookup dropdown">
+          <div 
+            @click=${this._toggleLookup} 
+            tabindex="0" 
+            role="combobox" 
+            class="select-btn"
+            aria-haspopup="listbox" 
+            aria-expanded="${this._isActive()}" 
+            aria-label="${this.displayName} lookup dropdown"
+          >
             <span class="tag-container">${this.selectedData.map((data, key) => { 
               return this._generateTag(data, key); 
             })}</span>
@@ -620,11 +630,13 @@ export class LookupSearch extends LitElement {
                 return html`
                   <li id="${index}" 
                     role="option" 
-                    aria-selected="${index === this.selectedIndex}" 
+                    aria-selected="${this.selectedData.includes(data)}"  
                     tabindex="${index === this.selectedIndex ? 0 : -1}"
                     class="lookup-option" 
+                    @keydown=${(e: Event) => this._addSelectedDataOnKey(e, this.isMultiSelect)}
                     @click=${(e: Event) => this._addSelectedData(e, this.isMultiSelect)}>${data}
-                  </li>`;
+                  </li>
+                `;
               })}
               ${this.filterData.length === 0 && this.isSearchValue ? html `<li class="lookup-info-message"> &#x1F6C8; Sorry no results</li>` : ''}
             </ul>

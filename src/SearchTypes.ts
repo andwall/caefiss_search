@@ -57,5 +57,4 @@ type OptionSet = {
     value: number;
 }
 
-export { SearchTypes, Operation, Condition };
-export type { SearchEvent, EntityInfo, OptionSet };
+export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo, OptionSet};

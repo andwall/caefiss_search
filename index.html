@@ -49,6 +49,11 @@
             <!-- At time of immunization section -->
             <div>
               <div class="row">
+                <div class="col-sm-6">
+                  <search-text id="vNumber" displayName="V number" entityName="v_number" fieldName="V number"></search-text> 
+                </div>
+              </div>
+              <div class="row">
               <div class="col-sm-6">
                   <search-text displayName="Province/Territory" entityName="incident" fieldName="caefiss_ati_province_territory"></search-text>
                 </div>
@@ -76,12 +81,12 @@
                 </div>                       
               </div>
           
-            <hr>
+              <hr>
             
             
             <div class="row">
                 <div class="col-sm-6">
-                <search-date displayName="Date of birth(YYYY-MM-DD)" 
+                <search-date id="searchDate" displayName="Date of birth(YYYY-MM-DD)" 
                   entityName="incident" fieldName="caefiss_ati_date_of_birth">
                 </search-date>
                 </div>            
@@ -146,13 +151,16 @@
     </div>
 
     <script type="text/javascript">
-      // let vNum = document.getElementById('vNumber');
-      // let showText = document.getElementById('showText');
-      // vNum.addEventListener('search-text-event', (e) =>{
-      //   console.log(e.detail)
-      //   showText.innerHTML = e.detail.displayName;
-      // })   
+      let vNum = document.getElementById('vNumber');
+      let showText = document.getElementById('showText');
+      vNum.addEventListener('search-text-event', (e) =>{
+        console.log(e.detail)
+      });   
       
+      let searchDate = document.getElementById('searchDate');
+      searchDate.addEventListener('search-date-event', (e) =>{
+        console.log(e.detail)
+      })
       // let zNum = document.getElementById('man1');
       // let showText2 = document.getElementById('showText2');
       // zNum.addEventListener('search-text-event', (e) =>{
@@ -161,10 +169,6 @@
       // })
 
 
-      // let searchDate = document.getElementById('searchDate');
-      // searchDate.addEventListener('search-date-event', (e) =>{
-      //   console.log(e.detail)
-      // })
       
       // let x;
       // let y;
@@ -201,9 +205,9 @@
         console.log(e.detail);
       });
 
-      window.addEventListener('focus', e => {
-        if(e.target) console.log(e.target);
-      }, true);
+      // window.addEventListener('focus', e => {
+      //   if(e.target) console.log(e.target);
+      // }, true);
 
     </script>
   </body>
