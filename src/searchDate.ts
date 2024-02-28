@@ -286,10 +286,9 @@ export class DateSearch extends LitElement{
   }
 
   _changeCondition(event: Event): void{
-    const clickedEl = event.target as HTMLSelectElement;
-    let selectedIndex = Number(clickedEl.selectedIndex);
+    let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.operation === Operation.Change)
+    if(this.operation === Operation.Change || this.condition === Condition.NotNull)
       this._dispatchMyEvent();
   }
 
@@ -300,13 +299,14 @@ export class DateSearch extends LitElement{
     }else if(!this.date1 && this.date2){
       findText = this.date2.toString();
     }else if(this.date1 && this.date2){
-      findText = this.date1 + " " + this.date2;
+      findText = `${this.date1} ${this.date2}`;
     }
     return findText;
   }
 
   _dispatchMyEvent(): void{
-    let findText = this._generateFindText();
+    this.findText = this._generateFindText();
+    this._setOperation();
 
     let evt: SearchEvent = {
       type: SearchTypes.Date,
@@ -317,7 +317,7 @@ export class DateSearch extends LitElement{
       to: this.to,
       fieldName: this.fieldName,
       displayName: this.displayName,
-      findText: findText,
+      findText: this.findText,
       condition: this.condition,
       operation: this.operation,
       context: this.context,
@@ -337,6 +337,10 @@ export class DateSearch extends LitElement{
   _setChecked(event: Event): void {
     this.checked.include = (event.target as HTMLInputElement).checked ? true : false; 
     this._dispatchMyEvent();
+  }
+
+  _setOperation(): void{
+    this.operation = this.condition === Condition.NotNull ||  this.findText ? Operation.Change : Operation.Delete;
   }
 
   _processDisplayName(): string{
@@ -373,9 +377,9 @@ export class DateSearch extends LitElement{
 
           <!-- Date Search --> 
           <div class="date-search-wrapper">
-              <input @change=${ this._changeDate } type="date" class="input" id="date1" aria-labelledby="display-name"></input>
-              <span class="dash">-</span>
-              <input @change=${ this._changeDate } type="date" class="input" id="date2" aria-labelledby="display-name"></input>
+            <input @change=${ this._changeDate } type="date" class="input" id="date1" aria-labelledby="display-name"></input>
+            <span class="dash">-</span>
+            <input @change=${ this._changeDate } type="date" class="input" id="date2" aria-labelledby="display-name"></input>
           </div>
         </div>
       </div>

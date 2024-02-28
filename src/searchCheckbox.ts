@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyValueMap } from "lit";
+import { LitElement, html, css } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo, OptionSet } from "./SearchTypes";
 import { CAEFISS } from "./utilities";
@@ -244,14 +244,11 @@ export class CheckboxSearch extends LitElement {
     let seenKeys: Set<string> = new Set<string>();
     
     data.forEach(d => {
-      if(!seenKeys.has(d.key)) this.checkedOptions.set(d.key, false);  
+      if(!seenKeys.has(d.key)){
+        this.checkedOptions.set(d.key, false); 
+      } 
       seenKeys.add(d.key);
     });
-    
-    // for(let i = 0; i < 6; i++){
-    //   let key = `Option ${i}`;
-    //   this.checkedOptions.set(key, false);
-    // } 
   }
 
   _changeMessage(event: Event): void {
@@ -260,16 +257,19 @@ export class CheckboxSearch extends LitElement {
     this._dispatchMyEvent();
   }
 
-  _deleteOperation(): boolean{
-    for(let key of this.checkedOptions.keys())
-      if(this.checkedOptions.get(key) === true) return false;
-    return true;
+  _setOperation(): void{
+    let deleteOperation: boolean = true;
+    for(let key of this.checkedOptions.keys()){
+      if(this.checkedOptions.get(key) === true){
+        deleteOperation = false; 
+        break;
+      }
+    }
+    this.operation = !deleteOperation || this.condition === Condition.NotNull ?  Operation.Change : Operation.Delete;
   }
   
   _dispatchMyEvent(): void {
-    if(this._deleteOperation()) this.operation = Operation.Delete;
-    else this.operation = Operation.Change;
-
+    this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Checkbox,
       entityName: this.entityName,

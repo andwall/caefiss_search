@@ -65,14 +65,16 @@ export class OptionSearch extends LitElement {
   private uniqueRef: Ref<HTMLDivElement> = createRef();
 
   /* Holds data for options */
-  private optionData: string[] = [];
-  @state() private selectedData: string[] = [];
+  private optionData: OptionSet[] = [];
+  @state() private selectedDataNames: string[] = [];
+  @state() private selectedData: OptionSet[] = [];
 
   /* Used for styling purposes */
   @query('.options-wrapper') private optionsWrapper?: HTMLElement;
   @query('#options-list-container') private optionsContainer?: HTMLElement;
   @query('.select-btn') private selectBtn?: HTMLElement;
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
+
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "in", name: "in", icon: "&ni;", condition: Condition.In},
     { id: "notIn", name: "not in", icon: "&notni;", condition: Condition.NotIn },
@@ -372,11 +374,16 @@ export class OptionSearch extends LitElement {
       justify-content: space-between;
     }
 
-    .tag-x-container{
+    .tag-x-button{
       width: min-content;
       height: auto;
       text-align: center;
       cursor: pointer;
+      border: none;
+    }
+
+    .tag-x-button:hover{
+      background-color: transparent;
     }
 
     .tag-x{
@@ -384,17 +391,17 @@ export class OptionSearch extends LitElement {
       font-weight: 700;
     }
 
-    .tag-x-container:hover .tag-x{
+    .tag-x-button:hover .tag-x{
       color: red;
       font-weight: 700;
     }
    
-    .tag-x-container:focus{
+    .tag-x-button:focus{
       /* border: 2px solid red; */
       outline: none;
     }
     
-    .tag-x-container:focus .tag-x{
+    .tag-x-button:focus .tag-x{
       color: red;
       font-weight: 700;
     }
@@ -431,10 +438,9 @@ export class OptionSearch extends LitElement {
     }
   `;
 
-  /** 
+  /*
    * Function: connectedCallback
-   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and focus away event - closes options dropdown
-   * Note: only works if direct parent is the main HTML as it is listening on window & needs es6 arrow function
+   * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and focus away event globally - closes options dropdown
   */
   override connectedCallback(): void {
     super.connectedCallback();
@@ -453,19 +459,21 @@ export class OptionSearch extends LitElement {
   protected override firstUpdated(): void {
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
     this.condition = this.conditions[0].condition;
+
+    /* If property of include checkbox is checked, dispatch event */
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
 
     /* Responsible for opening drop down when entering "enter" */
     this.selectBtn?.addEventListener('keydown', (e) => {
-      if(e.key === "Enter"){
+      if(e.key === "Enter" || e.code === "Space"){
         e.preventDefault();
+        e.stopPropagation();
         this._toggleOptions();
       }
       if(e.key === "Escape"){
-        if(this._isActive()){
-          this._toggleOptions();
-        }
+        e.stopPropagation();
+        if(this._isActive()) this._toggleOptions();
       }
     });
 
@@ -477,17 +485,15 @@ export class OptionSearch extends LitElement {
     }); 
    
     /* Responsible for handling keyboard events on Options dropdown */
-    this.optionsContainer?.addEventListener('keydown', (e: Event) => {
-      let event = e as KeyboardEvent;
-      if(event.key === 'ArrowUp' && this.selectedIndex > 0){
+    this.optionsContainer?.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowUp' && this.selectedIndex > 0){
         e.preventDefault();
-        this.selectedIndex > 0 ? this.selectedIndex-- : '';
-        this._focusOptionAtIndex(this.selectedIndex);
-      }else if(event.key === 'ArrowDown'){
+        this._focusOptionAtIndex(--this.selectedIndex);
+      }else if(e.key === 'ArrowDown' && this.selectedIndex < this.optionData.length - 1){
         e.preventDefault();
-        this.selectedIndex < this.optionData.length - 1 ? this.selectedIndex++ : '';
-        this._focusOptionAtIndex(this.selectedIndex);
-      }else if(event.key === 'Escape' && this._isActive()){ 
+        this._focusOptionAtIndex(++this.selectedIndex);
+      }else if(e.key === 'Escape' && this._isActive()){ 
+        e.stopPropagation();
         this._toggleOptions();
       }
     });
@@ -495,19 +501,19 @@ export class OptionSearch extends LitElement {
 
   /* Responsible for fetching Options data */
   _getData(): void {
-    let tempSet: Set<string> = new Set<string>();
-    // let util = new CAEFISS();
-    // let data = util.getOptionSet(this.fieldName);
+    let tempSet: Set<OptionSet> = new Set<OptionSet>();
+    let util = new CAEFISS();
+    let data = util.getOptionSet(this.fieldName);
 
-    // data.forEach((d) => {
-    //   if(d) tempSet.add(d.key);
-    // });
-    for(let i = 0; i < 12; i++) tempSet.add(`Option ${i}`);
+    data.forEach((d) => {
+      if(d) tempSet.add(d);
+    });
     this.optionData = [...tempSet];
   }
 
   _dispatchMyEvent(): void {
     this._changeMessage();
+    this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Option,
       entityName: this.entityName,
@@ -537,23 +543,28 @@ export class OptionSearch extends LitElement {
   _changeCondition(event: Event): void {
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.operation === Operation.Change || this.condition === Condition.NotIn) this._dispatchMyEvent();
+    if(this.operation === Operation.Change || this.condition === Condition.NotIn || this.condition === Condition.NotNull) this._dispatchMyEvent();
   }
 
   _changeMessage(): void {
     this.findText = this.selectedData.toString();
-    this.operation = this.findText || this.condition === Condition.NotIn ? Operation.Change : Operation.Delete; //check if the value is empty
+  }
+  
+  _setOperation(): void{
+    this.operation = this.findText || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
   }
   
   /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
   _addSelectedData(event: Event, isMultiSelect: boolean): void {
     event.stopPropagation(); //stop select btn from receiving event
-    let currEl = event.target as HTMLElement;
-    let currValue = currEl.innerText; 
+    let currId: number = Number((event.target as HTMLElement).id);
+    console.log('Index of clicked item: ' + currId);
+    console.log('corresponding option data: ' + this.optionData[currId]);
+    let currValue = (event.target as HTMLElement).innerText; 
     
-    if(!this.selectedData.includes(currValue)){
-      if(!isMultiSelect) this.selectedData = [];
-      this.selectedData.push(currValue);
+    if(!this.selectedDataNames.includes(currValue)){
+      if(!isMultiSelect) this.selectedDataNames = [];
+      this.selectedDataNames.push(currValue);
       this._dispatchMyEvent();
     }
     this.requestUpdate();
@@ -569,8 +580,8 @@ export class OptionSearch extends LitElement {
  
   /* Resposible for removing tag */
   _removeTag(event: Event, index: number): void {
-    this.selectedData.splice(index, 1);
-    event.stopPropagation(); //stop select btn from receiving event
+    event.stopPropagation(); 
+    this.selectedDataNames.splice(index, 1);
     this._dispatchMyEvent();
     this.selectBtn?.focus();
   }  
@@ -599,31 +610,33 @@ export class OptionSearch extends LitElement {
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
   }
   
-  /* Generates selected Options tags */
-  _generateTag(tagName: string, key: number): TemplateResult {
-    return html `
-      <div class="tag-content">
-        <p class="tag-name">${tagName}</p>
-        <div @keydown=${(e: Event) => this._removeTagOnKey(e, key)}  tabindex="0" role="button" @click=${(e: Event) => this._removeTag(e, key)} class="tag-x-container" id="${key}">
-          <p aria-label="${tagName} remove" class="tag-x"><span aria-hidden="true">&times;</span></p>
-        </div>
-      </div>
-    `; 
-  }
-
+  
   /* Resposible for focusing the option in the option drop down on arrow up/down */
   _focusOptionAtIndex(index: number): void {
     const options = this.shadowRoot?.querySelectorAll('.options-list-item');
-    if (options && index >= 0 && index < options.length) (options[index] as HTMLElement).focus();
+    if (options && index >= 0 && index < options.length) 
+    (options[index] as HTMLElement).focus();
   }
 
   _isActive(): boolean{
-    return this.optionsWrapper?.classList.contains('active') || false;
+   return this.optionsWrapper?.classList.contains('active') || false;
   }
 
   _setChecked(event: Event): void {
     this.checked.include = (event.target as HTMLInputElement).checked ? true : false; 
     this._dispatchMyEvent();
+  }
+
+  /* Generates selected Options tags */
+  _generateTag(tagName: string, key: number): TemplateResult {
+    return html `
+      <div class="tag-content">
+        <p class="tag-name">${tagName}</p>
+        <button @keydown=${(e: Event) => this._removeTagOnKey(e, key)} @click=${(e: Event) => this._removeTag(e, key)} class="tag-x-button" id="${key}" aria-label="${tagName} remove">
+          <span class="tag-x" aria-hidden="true">&times;</span>
+        </div>
+      </div>
+    `; 
   }
 
   override render(){
@@ -632,7 +645,12 @@ export class OptionSearch extends LitElement {
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
-            <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name include-checkbox-label"/>
+            <input 
+              @click=${this._setChecked} 
+              type="checkbox" 
+              id="include-checkbox" 
+              aria-labelledby="display-name include-checkbox-label"
+            />
             <label for="include-checkbox" id="include-checkbox-label"><span class="visually-hidden">Include in output</span></label>
           </div>
           <h4 id="display-name">${this.displayName}</h4>
@@ -643,6 +661,7 @@ export class OptionSearch extends LitElement {
           <div class="condition-wrapper">
             <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
             <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
+              <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
                 return html `<option ${key === 0 ? 'selected': ''} class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
               })}
@@ -651,8 +670,16 @@ export class OptionSearch extends LitElement {
 
           <!-- Drop down (Options) -->
           <div class="options-wrapper">
-            <div @click=${this._toggleOptions} tabindex="0" role="combobox" class="select-btn" aria-haspopup="listbox" aria-expanded="${this._isActive()}" aria-label="${this.displayName} options dropdown">
-              <span class="tag-container">${this.selectedData.map((data, key) => { 
+            <div 
+              @click=${this._toggleOptions} 
+              tabindex="0" 
+              role="combobox" 
+              class="select-btn" 
+              aria-haspopup="listbox" 
+              aria-expanded="${this._isActive()}" 
+              aria-label="${this.displayName} options dropdown"
+            >
+              <span class="tag-container">${this.selectedDataNames.map((data, key) => { 
                 return this._generateTag(data, key); 
               })}</span>
               <span class="arrow-container"><i id="arrow" class="arrow-black down"></i></span>
@@ -664,12 +691,13 @@ export class OptionSearch extends LitElement {
                   return html`
                     <li id="${index}" 
                       role="option" 
-                      aria-selected="${this.selectedData.includes(data)}" 
+                      aria-selected="${this.selectedDataNames.includes(data.key)}" 
                       tabindex="${index === this.selectedIndex ? 0 : -1}"
                       class="options-list-item" 
                       @keydown=${(e: Event) => this._addSelectedDataOnKey(e, this.isMultiSelect)}
-                      @click=${(e: Event) => this._addSelectedData(e, this.isMultiSelect)}>${data}
-                    </li>`;
+                      @click=${(e: Event) => this._addSelectedData(e, this.isMultiSelect)}>${data.key}
+                    </li>
+                  `;
                 })}
               </ul>
             </div>
