@@ -33,25 +33,17 @@ export class CheckboxSearch extends LitElement {
 
   @property()
   include: boolean = false;
-
-  @state()
-  private context: string = '';
-
-  @state()
-  private operation: Operation = Operation.Delete;
-
-  @state()
-  private condition: Condition = Condition.Equal;
-
-  @state()
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-
-  /* Responsible for option set data and checked options */
-  @state()
-  private checkedOptions: Map<string, boolean> = new Map<string, boolean>(); 
-
+  
   @query('#include-checkbox')
   private includeCheckbox?: HTMLInputElement;
+
+  private context: string = '';
+  private operation: Operation = Operation.Delete;
+  private condition: Condition = Condition.Equal;
+  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private optionData: OptionSet[] = [];
+  private checkedOptions: Map<number, boolean> = new Map<number, boolean>(); 
+
 
   static override styles = css`
     *{
@@ -240,32 +232,31 @@ export class CheckboxSearch extends LitElement {
   /* Responsible for getting option set to populate checkboxes */
   _getData(){
     let util = new CAEFISS();
-    let data: OptionSet[] = util.getOptionSet(this.fieldName); // returns OptionSet[] -> [{key: "", value: 0}]
-    let seenKeys: Set<string> = new Set<string>();
-    
+    let data: OptionSet[] = util.getOptionSet(this.fieldName);
     data.forEach(d => {
-      if(!seenKeys.has(d.key)){
-        this.checkedOptions.set(d.key, false); 
+      if(!this.optionData.some(obj => obj.key === d.key)){ //remove duplicates
+        this.optionData.push(d);
+        this.checkedOptions.set(d.value, false);
       } 
-      seenKeys.add(d.key);
     });
   }
 
   _changeMessage(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.checked ? this.checkedOptions.set(input.id, true) : this.checkedOptions.set(input.id, false);
+    const target = event.target as HTMLInputElement;
+    const selectedKey = Number(target.id);
+    target.checked ? this.checkedOptions.set(selectedKey, true) : this.checkedOptions.set(selectedKey, false);
     this._dispatchMyEvent();
   }
 
   _setOperation(): void{
-    let deleteOperation: boolean = true;
+    let deleteOperaiton: boolean = true;
     for(let key of this.checkedOptions.keys()){
       if(this.checkedOptions.get(key) === true){
-        deleteOperation = false; 
+        deleteOperaiton = false;
         break;
-      }
+      } 
     }
-    this.operation = !deleteOperation || this.condition === Condition.NotNull ?  Operation.Change : Operation.Delete;
+    this.operation = deleteOperaiton ? Operation.Delete : Operation.Change;
   }
   
   _dispatchMyEvent(): void {
@@ -317,11 +308,11 @@ export class CheckboxSearch extends LitElement {
       
       <!-- Conditions & input container -->
       <div class="input-container">
-          ${Array.from(this.checkedOptions.keys()).map(key => {
+          ${this.optionData.map((data) => {
             return html `
               <div class="search-checkbox-container">
-                <input @click=${this._changeMessage} type="checkbox" class="checkbox-input" id="${key}"></input>
-                <label for="${key}" class="checkbox-input-label">${key}</label> 
+                <input @click=${this._changeMessage} type="checkbox" class="checkbox-input" id="${data.value}"></input>
+                <label for="${data.value}" class="checkbox-input-label">${data.key}</label> 
               </div>
             `;
           })}

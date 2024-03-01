@@ -43,31 +43,15 @@ export class OptionSearch extends LitElement {
   @property()
   include: boolean = false;
   
-  @state()
   private context: string = '';
-
-  @state()
   private operation: Operation = Operation.Delete;
-
-  @state()
   private findText: string = '';
-
-  @state()
   private condition: Condition = Condition.NotIn;
-  
-  @state()
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-
-  @state()
   private selectedIndex: number = 0; 
-  
-  /* Responsible for uniquely identifying "this" element */
-  private uniqueRef: Ref<HTMLDivElement> = createRef();
-
-  /* Holds data for options */
+  private uniqueRef: Ref<HTMLDivElement> = createRef(); // Responsible for uniquely identifying "this" element
   private optionData: OptionSet[] = [];
-  @state() private selectedDataNames: string[] = [];
-  @state() private selectedData: OptionSet[] = [];
+  private selectedData: OptionSet[] = [];
 
   /* Used for styling purposes */
   @query('.options-wrapper') private optionsWrapper?: HTMLElement;
@@ -499,20 +483,17 @@ export class OptionSearch extends LitElement {
     });
   }
 
-  /* Responsible for fetching Options data */
+  /* Responsible for fetching Option's data */
   _getData(): void {
-    let tempSet: Set<OptionSet> = new Set<OptionSet>();
     let util = new CAEFISS();
     let data = util.getOptionSet(this.fieldName);
-
     data.forEach((d) => {
-      if(d) tempSet.add(d);
+      if(!this.optionData.some(obj => obj.key === d.key)) this.optionData.push(d); //avoid duplicates 
     });
-    this.optionData = [...tempSet];
   }
 
   _dispatchMyEvent(): void {
-    this._changeMessage();
+    this._setFindText();
     this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Option,
@@ -546,27 +527,24 @@ export class OptionSearch extends LitElement {
     if(this.operation === Operation.Change || this.condition === Condition.NotIn || this.condition === Condition.NotNull) this._dispatchMyEvent();
   }
 
-  _changeMessage(): void {
-    this.findText = this.selectedData.toString();
+  _setFindText(): void {
+    this.findText = JSON.stringify(this.selectedData);
   }
   
   _setOperation(): void{
-    this.operation = this.findText || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
+    this.operation = this.selectedData.length > 0 || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
   }
   
   /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
   _addSelectedData(event: Event, isMultiSelect: boolean): void {
     event.stopPropagation(); //stop select btn from receiving event
     let currId: number = Number((event.target as HTMLElement).id);
-    console.log('Index of clicked item: ' + currId);
-    console.log('corresponding option data: ' + this.optionData[currId]);
-    let currValue = (event.target as HTMLElement).innerText; 
     
-    if(!this.selectedDataNames.includes(currValue)){
-      if(!isMultiSelect) this.selectedDataNames = [];
-      this.selectedDataNames.push(currValue);
+    if(!this.selectedData.includes(this.optionData[currId])){
+      if(!isMultiSelect) this.selectedData = [];
+      this.selectedData.push(this.optionData[currId]);
       this._dispatchMyEvent();
-    }
+    }    
     this.requestUpdate();
     this._toggleOptions();
     this.selectBtn?.focus();
@@ -581,8 +559,9 @@ export class OptionSearch extends LitElement {
   /* Resposible for removing tag */
   _removeTag(event: Event, index: number): void {
     event.stopPropagation(); 
-    this.selectedDataNames.splice(index, 1);
+    this.selectedData.splice(index, 1);
     this._dispatchMyEvent();
+    this.requestUpdate();
     this.selectBtn?.focus();
   }  
  
@@ -592,7 +571,7 @@ export class OptionSearch extends LitElement {
     this._removeTag(event, index);
   }
 
-  /* Responsible for checking if event is happening on this current element and toggling options dropdown*/
+  /* Responsible for checking if event is happening on "this" current element and toggling options dropdown*/
   _localAway(event: Event): void {
     let currEl = event.target as HTMLElement;
     if(!(this.optionsWrapper?.contains(currEl)) && this._isActive()) this._toggleOptions();
@@ -610,12 +589,11 @@ export class OptionSearch extends LitElement {
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
   }
   
-  
   /* Resposible for focusing the option in the option drop down on arrow up/down */
   _focusOptionAtIndex(index: number): void {
     const options = this.shadowRoot?.querySelectorAll('.options-list-item');
-    if (options && index >= 0 && index < options.length) 
-    (options[index] as HTMLElement).focus();
+    if(options && index >= 0 && index < options.length) 
+      (options[index] as HTMLElement).focus();
   }
 
   _isActive(): boolean{
@@ -628,11 +606,11 @@ export class OptionSearch extends LitElement {
   }
 
   /* Generates selected Options tags */
-  _generateTag(tagName: string, key: number): TemplateResult {
+  _generateTag(tagName: string, index: number): TemplateResult {
     return html `
       <div class="tag-content">
         <p class="tag-name">${tagName}</p>
-        <button @keydown=${(e: Event) => this._removeTagOnKey(e, key)} @click=${(e: Event) => this._removeTag(e, key)} class="tag-x-button" id="${key}" aria-label="${tagName} remove">
+        <button @keydown=${(e: Event) => this._removeTagOnKey(e, index)} @click=${(e: Event) => this._removeTag(e, index)} class="tag-x-button" id="${index}" aria-label="${tagName} remove">
           <span class="tag-x" aria-hidden="true">&times;</span>
         </div>
       </div>
@@ -679,8 +657,8 @@ export class OptionSearch extends LitElement {
               aria-expanded="${this._isActive()}" 
               aria-label="${this.displayName} options dropdown"
             >
-              <span class="tag-container">${this.selectedDataNames.map((data, key) => { 
-                return this._generateTag(data, key); 
+              <span class="tag-container">${this.selectedData.map((data, index) => { 
+                return this._generateTag(data.key, index); 
               })}</span>
               <span class="arrow-container"><i id="arrow" class="arrow-black down"></i></span>
             </div>
@@ -691,7 +669,7 @@ export class OptionSearch extends LitElement {
                   return html`
                     <li id="${index}" 
                       role="option" 
-                      aria-selected="${this.selectedDataNames.includes(data.key)}" 
+                      aria-selected="${this.selectedData.includes(data)}" 
                       tabindex="${index === this.selectedIndex ? 0 : -1}"
                       class="options-list-item" 
                       @keydown=${(e: Event) => this._addSelectedDataOnKey(e, this.isMultiSelect)}
