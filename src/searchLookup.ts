@@ -34,9 +34,8 @@ export class LookupSearch extends LitElement {
   @property()
   displayName: string = '';
 
-  /* Responsible for determining if lookup is option set or lookup data */
   @property()
-  lookupType: string = '';
+  lookupType: string = ''; // Responsible for determing if lookup is option set or lookup data; may remove later
 
   @property()
   alias: string = '';
@@ -44,30 +43,19 @@ export class LookupSearch extends LitElement {
   @property()
   isMultiSelect: boolean = false;
   
-  @state()
   private context: string = '';
-
-  @state()
   private operation: Operation = Operation.Delete;
-
-  @state()
   private findText: string = '';
-
-  @state()
   private condition: Condition = Condition.Equal;
-  
-  @state()
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-
-  @state()
   private selectedIndex: number = 0; 
-  
-  /* Responsible for uniquely identifying "this" element */
-  private uniqueRef: Ref<HTMLDivElement> = createRef();
+  private uniqueRef: Ref<HTMLDivElement> = createRef(); //uniquely identifies "this" element
+  private isFirstVisit: boolean = true;
+  private statusMessage: string = "Please wait, getting data :)";
 
   /* Holds data for lookup */
   private lookupData: string[] = [];
-  @state() private selectedData: string[] = [];
+  private selectedData: string[] = [];
   @state() private filterData: string[] = [];
 
   /* Used for styling purposes */
@@ -384,7 +372,6 @@ export class LookupSearch extends LitElement {
     super.connectedCallback();
     window.addEventListener('mousedown', e => this._globalAway(e));
     window.addEventListener('focusin', e => this._globalAway(e));
-    this._getData("lookupdata");
   }
   
   override disconnectedCallback(): void {
@@ -409,13 +396,6 @@ export class LookupSearch extends LitElement {
         if(this._isActive()) this._toggleLookup();
       }
     });
-
-    /* Responsible for toggle lookup when out of focus */
-    this.lookupOptionsContainer?.addEventListener('blur', (e) => {
-      if(!this.lookupOptionsContainer?.contains(e.relatedTarget as HTMLElement)) {
-        if(this._isActive()) this._toggleLookup();
-      }
-    }); 
    
     /* Responsible for handling keyboard events on lookup dropdown */
     this.lookupOptionsContainer?.addEventListener('keydown', (e) => {
@@ -433,21 +413,19 @@ export class LookupSearch extends LitElement {
   }
 
    /* Responsible for fetching lookup data */
-  _getData(lookupType: string): void {
+  _getData(): void {
     let tempSet: Set<string> = new Set<string>();
     let util = new CAEFISS();
-    
-    if(lookupType === "lookupdata"){ //need to update when option is available
-     let data = util.getLookup(this.entityName, this.fieldName);
-     data.forEach((d) => {
-       if(d) tempSet.add(d);
-     });
-    }
+    let data = util.getLookup(this.entityName, this.fieldName);
+    data.forEach((d) => {
+      if(d) tempSet.add(d);
+    });
     this.lookupData = [...tempSet];
+    this.requestUpdate();
   }
 
   _dispatchMyEvent(): void {
-    this._changeMessage();
+    this._setFindText();
     this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Lookup,
@@ -475,14 +453,14 @@ export class LookupSearch extends LitElement {
     this.dispatchEvent(searchChangeEvent);
   }
 
-  _changeCondition(event: Event): void {
+  _setCondition(event: Event): void {
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
     if(this.operation === Operation.Change || this.condition === Condition.NotIn || this.condition === Condition.NotNull) 
       this._dispatchMyEvent();
   }
 
-  _changeMessage(): void {
+  _setFindText(): void {
     this.findText = this.selectedData.toString();
   }
 
@@ -490,7 +468,7 @@ export class LookupSearch extends LitElement {
     this.operation = this.findText || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
   }
   
-  /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
+  /* Responsible for adding selected data to selectedData array; supports multi select */
   _addSelectedData(event: Event, isMultiSelect: boolean): void {
     event.stopPropagation();
     let currValue = (event.target as HTMLElement).innerText; 
@@ -515,6 +493,7 @@ export class LookupSearch extends LitElement {
     event.stopPropagation(); //stop select btn from receiving event
     this.selectedData.splice(index, 1);
     this._dispatchMyEvent();
+    this.requestUpdate();
     this.selectBtn?.focus();
   }  
  
@@ -524,7 +503,7 @@ export class LookupSearch extends LitElement {
     this._removeTag(event, index); 
   }
 
-  /* Helper Functions */
+  /* Responsible for local click away on "this" component */
   _localAway(event: Event): void {
     let currEl = event.target as HTMLElement;
     if(!(this.lookupWrapper?.contains(currEl)) && this._isActive())
@@ -542,10 +521,16 @@ export class LookupSearch extends LitElement {
   _toggleLookup(): void {
     this.lookupWrapper?.classList.toggle('active');
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
+    if(this.isFirstVisit){
+      setTimeout(() => {
+        this._getData();
+        this.isFirstVisit = false;
+      }, 100);
+    } 
   }
   
-  _filterLookup(e: Event): void {
-    let currEl = e.target as HTMLInputElement;
+  _filterLookup(event: Event): void {
+    let currEl = event.target as HTMLInputElement;
     this.isSearchValue = currEl.value ? true : false;
     this.filterData = this.lookupData.filter(data => {
       return data.toLowerCase().startsWith(currEl.value.toLowerCase());
@@ -585,7 +570,7 @@ export class LookupSearch extends LitElement {
         <!-- Drop down (conditions) -->
         <div class="condition-wrapper">
           <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
-          <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
+          <select @change=${this._setCondition} id="condition-btn" aria-labelledby="display-name condition-label">
             <!-- Populate conditions -->
             ${this.conditions?.map((condition, key) => {
               return html `
@@ -595,7 +580,7 @@ export class LookupSearch extends LitElement {
                   class="condition-option" 
                   value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;
                 </option>
-              `
+              `;
             })}
           </select> 
         </div>
@@ -625,7 +610,8 @@ export class LookupSearch extends LitElement {
               <input id="lookupSearch" @input=${this._filterLookup} type="text" placeholder="Search" aria-labelledby="display-name"></input>
             </div>
             <ul role="listbox" tabindex="-1" class="lookup-options" id="lookup-options-container">
-              ${!this.isSearchValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: ''}
+              ${this.lookupData.length <= 0 ? html `<li class="lookup-info-message"> &#x1F6C8;&nbsp;${this.statusMessage}` : ''}
+              ${this.lookupData.length > 0 && !this.isSearchValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: ''}
               ${this.filterData.map((data, index) => {
                 return html`
                   <li id="${index}" 

@@ -15,7 +15,7 @@ enum Operation {
 enum Condition {
     Equal = "eq",
     NotEqual = "ne",
-    Contains = "contains",
+    Contains = "like",
     BeginsWith="begins-with",
     EndsWith="ends-with",
     Null = "null",

@@ -5,7 +5,7 @@ import { TwoOptionSearch } from './searchTwoOption'
 import { CheckboxSearch } from './searchCheckbox'
 import { OptionSearch } from './searchOption'
 import { FilterBuilder} from './FilterBuilder';
-import { CAEFISS } from './utilities';
+import { CAEFISS} from './utilities';
 
 export {TextSearch, DateSearch, LookupSearch, TwoOptionSearch, CheckboxSearch, OptionSearch, FilterBuilder, CAEFISS};
 

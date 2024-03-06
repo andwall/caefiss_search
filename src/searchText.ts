@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./SearchTypes";
 /*
@@ -34,21 +34,11 @@ export class TextSearch extends LitElement {
   @property()
   include: boolean = false;
 
-  @state()
   private context: string = '';
-
-  @state()
   private operation: Operation = Operation.Delete;
-
-  @state()
   private findText: string = '';
-
-  @state()
   private condition: Condition = Condition.Equal;
-
-  @state()
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
@@ -254,13 +244,13 @@ export class TextSearch extends LitElement {
     if(this.checked.include) this._dispatchMyEvent();
   }
 
-  _changeMessage(event: Event): void {
+  _setFindText(event: Event): void {
     this.findText = (event.target as HTMLInputElement).value; 
     this._dispatchMyEvent();
   }
   
-  _changeCondition(e: Event): void {
-    let selectedIndex = Number((e.target as HTMLSelectElement).selectedIndex);
+  _setCondition(event: Event): void {
+    let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
     this._dispatchMyEvent();
   }
@@ -319,14 +309,14 @@ export class TextSearch extends LitElement {
       <div class="input-container">
         <div class="condition-wrapper">
           <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
-          <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
+          <select @change=${this._setCondition} id="condition-btn" aria-labelledby="display-name condition-label">
             <!-- Populate conditions -->
             ${this.conditions?.map((condition, key) => {
               return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
             })}
           </select> 
         </div>
-        <input @change=${this._changeMessage} type="text" class="input" id="search-text" aria-labelledby="display-name"></input>
+        <input @change=${this._setFindText} type="text" class="input" id="search-text" aria-labelledby="display-name"></input>
       </div>
     </div>
     `;
