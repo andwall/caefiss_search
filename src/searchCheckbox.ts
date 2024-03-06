@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo, OptionSet } from "./SearchTypes";
 import { CAEFISS } from "./utilities";
 /*
@@ -44,7 +44,6 @@ export class CheckboxSearch extends LitElement {
   private optionData: OptionSet[] = [];
   private checkedOptions: Map<number, boolean> = new Map<number, boolean>(); 
 
-
   static override styles = css`
     *{
     margin: 0;
@@ -59,7 +58,7 @@ export class CheckboxSearch extends LitElement {
     
     #display-name{
       font-weight: normal;
-      font-size: 20px;
+      font-size: 18px;
       color: #2572b4;
     }
     
@@ -232,7 +231,7 @@ export class CheckboxSearch extends LitElement {
   /* Responsible for getting option set to populate checkboxes */
   _getData(){
     let util = new CAEFISS();
-    let data: OptionSet[] = util.getOptionSet(this.fieldName);
+    let data: OptionSet[] = util.getOptionSet(this.entityName, this.fieldName);
     data.forEach(d => {
       if(!this.optionData.some(obj => obj.key === d.key)){ //remove duplicates
         this.optionData.push(d);

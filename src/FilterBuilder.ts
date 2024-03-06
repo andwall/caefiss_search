@@ -1,34 +1,114 @@
-import { Condition, EntityInfo, SearchEvent } from "./SearchTypes";
+import { Condition, EntityInfo, SearchEvent, Operation } from "./SearchTypes";
+import { CAEFISS } from "./utilities";
 
 
 export class FilterBuilder {
 
     private entities: EntityInfo[];
     private filters: Map<string, Map<string, SearchEvent>>;
+    private attrs: Map<string, string[]>;
 
     constructor() {
 
         this.entities = [
             {
                 name: "incident",
-                from: "",
-                alias: ""
+                field: "",
+                alias: "",
+                include: false
             },
 
             {
                 name: "caefiss_submission",
-                from: "caefiss_master_case",
-                alias: "submission"
+                field: "caefiss_master_case",
+                alias: "submission",
+                include: false
             },
 
             {
                 name: "caefiss_aefi_vaccines",
-                from: "caefiss_case",
-                alias: "vaccine"
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+            
+            {
+                name: "caefiss_cd_concomitant_medication_mls",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_cd_meddra_mls",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            
+            {
+                name: "caefiss_cd_immunizing_agents_mls",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_aefi_immunization_history",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_aefi_hospitalization",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_aefi_meddras",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_aefi_acca",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_aefi_reporter_follow_up_activity",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_aefi_issue_resolution_activity",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
+            },
+
+            {
+                name: "caefiss_medicalassessmentofreportedaefis",
+                field: "caefiss_case",
+                alias: "vaccine",
+                include: false
             }
+
+            //
+            
         ];
 
         this.filters = new Map<string, Map<string, SearchEvent>>();
+        this.attrs = new Map<string, string[]>();
         this.entities.forEach((e) => {
             this.filters.set(e.name, new Map<string, SearchEvent>());
         });
@@ -40,9 +120,42 @@ export class FilterBuilder {
             return;
         }
 
-        let filtersForEntity = this.filters.get(entity);
-        let field = event.fieldName;
-        filtersForEntity?.set(field, event);
+        // attribute added or removed
+        if (event.checked) {
+            // add attribute
+            var name = event.checked.name;
+            var fld = event.checked.field;
+            var alias = event.checked.alias;
+            var checked = event.checked.include;
+            
+            if (!this.attrs.has(name)) {
+                this.attrs.set(name, []); // new empty array of attributes
+            }
+
+            var ind = alias ? alias + "." + fld : fld;
+            if (checked) {
+                if (this.attrs.get(name)?.indexOf(ind) === -1) {
+                    this.attrs.get(name)?.push(ind);
+                }
+            } else {
+                var x : string[] = this.attrs.get(name) || [];
+                var y : string[] = x.filter(s => s != ind)
+                this.attrs.set(name, y );
+            }
+            
+        }
+
+        // filter added, updated or removed
+        if (event.operation === Operation.Change) {
+            let filtersForEntity = this.filters.get(entity);
+            let field = event.fieldName;
+            filtersForEntity?.set(field, event);
+        } else if (event.operation === Operation.Delete) {
+            let filtersForEntity = this.filters.get(entity);
+            let field = event.fieldName;
+            filtersForEntity?.delete(field);
+        }
+
     }
 
     public toString(evt: SearchEvent): string {
@@ -53,12 +166,15 @@ export class FilterBuilder {
     public toFetchXml(): string {
         var xml: string = `
         <fetch view="search">
-            <entity name="incident">    
-                <attribute name="title" />
-                <attribute name="statuscode" />
-                <attribute name="ticketnumber" />
-                <attribute name="createdon" />    
-        `;
+            <entity name="incident">  
+               
+        `; 
+        if (this.attrs.has("incident")) {
+            var x = this.attrs.get("incident") || [];
+            x.filter(a => a.indexOf('.') === -1).forEach(function(a) {
+                xml += `<attribute name="${a}" />`;
+            });
+        }
 
         this.entities.forEach((e) => {
 
@@ -66,13 +182,23 @@ export class FilterBuilder {
             if (filters && filters.size > 0) {
 
                 if (e.name != "incident") {// check if this is a linked entity
-                    xml += `<link-entity name='${e.name}' from='${e.from}' to='incidentid' link-type='inner' alias='${e.alias}'>`;
+                    xml += `<link-entity name='${e.name}' from='${e.field}' to='incidentid' link-type='inner' alias='${e.alias}'>`;
                 }
+
+                var x = this.attrs.get(e.name) || [];
+                x.filter(a => a.startsWith(e.alias+".")).forEach(function(a) {
+                    if (a !== "title")
+                        xml += `<attribute name="${a}" />`;
+                });
 
                 // add the filter and all conditions
                 xml += "<filter>";
                 for (const [fld, evt] of filters.entries()) {
-                    xml += "<condition attribute='" + fld + "' operator='" + evt.condition + "' value='" + evt.findText + "' />"
+                    if (evt.condition === Condition.Contains) {
+                        xml += `<condition attribute='${fld}' operator='${evt.condition}' value='%${evt.findText}%' />`;
+                    } else {
+                        xml += `<condition attribute='${fld}' operator='${evt.condition}' value='${evt.findText}' />`;
+                    }
                 }
                 xml += "</filter>";
 
@@ -93,96 +219,30 @@ export class FilterBuilder {
 
     public search() {
         globalThis.Xrm.Utility.showProgressIndicator("Search in progress. Please wait....");
-        var record = {
-            fetchxml: this.toFetchXml().replaceAll('\n','')
-        };
 
-
-        var req = new XMLHttpRequest();
-        var parent = this;
-        req.open("PATCH", globalThis.Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/savedqueries(123f428b-1cb2-ee11-a569-000d3a09dca9)", true);
-        req.setRequestHeader("OData-MaxVersion", "4.0");
-        req.setRequestHeader("OData-Version", "4.0");
-        req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
-        req.setRequestHeader("Accept", "application/json");
-        req.setRequestHeader("Prefer", "odata.include-annotations=*");
-        req.onreadystatechange = function () {
-            if (this.readyState === 4) {
-                req.onreadystatechange = null;
-                if (this.status === 204) {
-                    console.log("Record updated");
-
-                    // refresh view
-                    parent.publishView();
-                } else {
-                    console.log(this.responseText);
-                }
+        
+        var allAttrs :string[] = [];
+        
+        for (const [_e, _a] of this.attrs.entries()) {
+            if (_a) {
+                _a.forEach(function(a) {allAttrs.push(a); });
             }
-        };
-        req.send(JSON.stringify(record));
-    }
-
-    public publishView() {
-        debugger;
-        var parameters = {
-            ParameterXml: "<importexportxml><entities><entity>incident</entity></entities></importexportxml>"
         }
 
-        var req = new XMLHttpRequest();
-        req.open("POST", globalThis.Xrm.Utility.getGlobalContext().getClientUrl() + "/api/data/v9.2/PublishXml", true);
-        req.setRequestHeader("OData-MaxVersion", "4.0");
-        req.setRequestHeader("OData-Version", "4.0");
-        req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
-        req.setRequestHeader("Accept", "application/json");
-        req.onreadystatechange = function () {
-            if (this.readyState === 4) {
-                req.onreadystatechange = null;
-                if (this.status === 200 || this.status === 204) {
-                    console.log("Success");
-                    globalThis.Xrm.Utility.closeProgressIndicator();
-                    
-                    let refresh = <HTMLButtonElement>parent.document.querySelectorAll('[aria-label="Refresh"]')[0];// parent.window.document.getElementById('incident\|NoRelationship\|HomePageGrid\|Mscrm\.Modern\.refreshCommand2id-121-button')
-                    if (refresh) {
-                        refresh.click();
-                    }
-                    //parent.window.location.reload();
-                    //parent.window.location.reload();
-/*
-                    var pageInput = {
-                        pageType: "dashboard",
-                        dashboardId: "1b2d08de-dbab-ee11-a569-000d3a09d9ea"
-                    };
-                    globalThis.Xrm.Navigation.navigateTo(pageInput,null).then(
-                        function success(result) {
-                                console.log("Ok: "+result);
+        var util : CAEFISS = new CAEFISS();
 
-                                var pageInput = {
-                                    pageType: "dashboard",
-                                    dashboardId: "1b2d08de-dbab-ee11-a569-000d3a09d9ea"
-                                };
-                                globalThis.Xrm.Navigation.navigateTo(pageInput,null).then(
-                                    function success(result) {
-                                            console.log("Ok: "+result);
-                                    },
-                                    function error() {
-                                        console.log("Error:");
-                                    }
-                                );
+        util.search("incident",  this.toFetchXml().replaceAll('\n',''), allAttrs);
 
+        //let refresh = <HTMLButtonElement>parent.document.querySelectorAll('[aria-label="Refresh"]')[0];
+        //if (refresh) {
+        //    refresh.click();
+        //}
+        //globalThis.Xrm.Navigation.openUrl(`https://caefiss-sandbox1.crm3.dynamics.com/main.aspx?appid=43248d47-2702-ed11-82e6-000d3af4d17d&pagetype=dashboard&id=${globalThis.dashboardId}&type=user`, null);
 
-
-
-                        },
-                        function error() {
-                            console.log("Error:");
-                        }
-                    );
-*/
-                } else {
-                    console.log(this.responseText);
-                }
-            }
-        };
-        req.send(JSON.stringify(parameters));
+        //var layoutXml : string = util.createLayoutXml("incidentid", allAttrs);
+        //util.createUserView(layoutXml, this.toFetchXml().replaceAll('\n',''), "TEMP-CAEFISS Search", "TEMP-CAEFISS Search");
+        //var dashboardId : string = util.createDashboard("TEMP-CAEFISS Search", viewId);
+        //this.publishView(dashboardId);
     }
+
 }

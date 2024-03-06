@@ -1,0 +1,119 @@
+<html>
+
+
+<head>
+
+    <script src="ClientGlobalContext.js.aspx" type="text/javascript"></script>
+
+
+    <script>
+
+        function openCase(vnum) {
+            if (!vnum) {
+                var title = document.getElementById("title");
+                if (title) {
+                    vnum = title.value;
+                } else {
+                    return;
+                }
+            }
+
+            var req = new XMLHttpRequest();
+            req.open("GET", parent.Xrm.Utility.getGlobalContext().getClientUrl() + `/api/data/v9.2/incidents?$select=incidentid&$filter=title eq '${vnum}'`, true);
+            req.setRequestHeader("OData-MaxVersion", "4.0");
+            req.setRequestHeader("OData-Version", "4.0");
+            req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+            req.setRequestHeader("Accept", "application/json");
+            req.setRequestHeader("Prefer", "odata.include-annotations=*");
+            req.onreadystatechange = function () {
+                if (this.readyState === 4) {
+                    req.onreadystatechange = null;
+                    if (this.status === 200) {
+                        var results = JSON.parse(this.response);
+                        console.log(results);
+                        for (var i = 0; i < results.value.length; i++) {
+                            var result = results.value[i];
+                            // Columns
+                            var incidentid = result["incidentid"];
+
+
+                            var entityFormOptions = {};
+                            entityFormOptions["entityName"] = "incident";
+                            entityFormOptions["entityId"] = incidentid;
+
+                            // Open the form.
+                            parent.Xrm.Navigation.openForm(entityFormOptions).then(
+                                function (success) {
+                                    console.log(success);
+                                },
+
+                                function (error) {
+                                    // show alert
+                                    console.log(error);
+                                });
+
+
+                        }
+                    } else {
+                        // show alert
+                        console.log(this.responseText);
+                    }
+                }
+            };
+            req.send();
+        }
+
+
+        document.onreadystatechange =
+            function () {
+                if (document.readyState == "complete") {
+                    getVnum();
+                }
+            };
+
+        function getVnum() {
+            if (location.search != "") {
+                if (location.search.split('=').length < 3) {
+                    openCase();
+                    return;
+                }
+
+                var vnum = location.search.split('=')[2];
+                if (vnum == null) {
+                    openCase();
+                } else {
+                    openCase(vnum);
+                }
+            } else {
+                openCase();
+            }
+        }
+
+       
+    </script>
+
+
+
+    <meta>
+
+
+</head>
+
+
+<body>
+
+
+    <h1>Open Case</h1>
+
+
+    <label for="title">V-number:</label>
+    <input type="text" id="title">
+
+    <button onclick="openCase();">Go</button>
+
+
+
+
+</body>
+
+</html>

@@ -1,5 +1,5 @@
 import { LitElement, html, css, TemplateResult } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { Condition, EntityInfo, Operation, OptionSet, SearchEvent, SearchTypes } from "./SearchTypes";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
@@ -52,6 +52,8 @@ export class OptionSearch extends LitElement {
   private uniqueRef: Ref<HTMLDivElement> = createRef(); // Responsible for uniquely identifying "this" element
   private optionData: OptionSet[] = [];
   private selectedData: OptionSet[] = [];
+  private isFirstVisit: boolean = true;
+  private statusMessage: string = "Please wait, getting data :)";
 
   /* Used for styling purposes */
   @query('.options-wrapper') private optionsWrapper?: HTMLElement;
@@ -304,6 +306,11 @@ export class OptionSearch extends LitElement {
       outline: none;
     }
 
+    .options-list-info-message{
+      background-color: #d7faff;
+      cursor: auto;
+    }
+
     .options-list .options-list-item{
       border-radius: 5px;
       padding: 5px;
@@ -333,7 +340,7 @@ export class OptionSearch extends LitElement {
     }
 
     .options-list::-webkit-scrollbar-thumb, .tag-container::-webkit-scrollbar-thumb{
-      background-color: #f1f1f1;
+      background-color: lightgray;
       border-radius: 25px;
     }
 
@@ -430,7 +437,6 @@ export class OptionSearch extends LitElement {
     super.connectedCallback();
     window.addEventListener('mousedown', e => this._globalAway(e));
     window.addEventListener('focusin', e => this._globalAway(e));
-    this._getData();
   }
   
   override disconnectedCallback(): void {
@@ -461,13 +467,6 @@ export class OptionSearch extends LitElement {
       }
     });
 
-    /* Responsible for toggle Options when out of focus */
-    this.optionsContainer?.addEventListener('blur', (e) => {
-      if(!this.optionsContainer?.contains(e.relatedTarget as HTMLElement)) {
-        if(this._isActive()) this._toggleOptions();
-      }
-    }); 
-   
     /* Responsible for handling keyboard events on Options dropdown */
     this.optionsContainer?.addEventListener('keydown', (e) => {
       if(e.key === 'ArrowUp' && this.selectedIndex > 0){
@@ -486,10 +485,11 @@ export class OptionSearch extends LitElement {
   /* Responsible for fetching Option's data */
   _getData(): void {
     let util = new CAEFISS();
-    let data = util.getOptionSet(this.fieldName);
+    let data = util.getOptionSet(this.entityName, this.fieldName);
     data.forEach((d) => {
       if(!this.optionData.some(obj => obj.key === d.key)) this.optionData.push(d); //avoid duplicates 
     });
+    this.requestUpdate();
   }
 
   _dispatchMyEvent(): void {
@@ -521,7 +521,7 @@ export class OptionSearch extends LitElement {
     this.dispatchEvent(searchChangeEvent);
   }
 
-  _changeCondition(event: Event): void {
+  _setCondition(event: Event): void {
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
     if(this.operation === Operation.Change || this.condition === Condition.NotIn || this.condition === Condition.NotNull) this._dispatchMyEvent();
@@ -587,6 +587,12 @@ export class OptionSearch extends LitElement {
   _toggleOptions(): void {
     this.optionsWrapper?.classList.toggle('active');
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
+    if(this.isFirstVisit){
+      setTimeout(() => {
+        this._getData();
+        this.isFirstVisit = false;
+      }, 100);
+    }
   }
   
   /* Resposible for focusing the option in the option drop down on arrow up/down */
@@ -638,7 +644,7 @@ export class OptionSearch extends LitElement {
           <!-- Drop down (conditions) -->
           <div class="condition-wrapper">
             <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
-            <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
+            <select @change=${this._setCondition} id="condition-btn" aria-labelledby="display-name condition-label">
               <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
                 return html `<option ${key === 0 ? 'selected': ''} class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
@@ -665,6 +671,7 @@ export class OptionSearch extends LitElement {
   
             <div class="options-content">
               <ul role="listbox" tabindex="-1" class="options-list" id="options-list-container">
+                ${this.optionData.length <= 0 ? html `<li class="options-list-info-message">&#x1F6c8;&nbsp;${this.statusMessage}` : ''}
                 ${this.optionData.map((data, index) => {
                   return html`
                     <li id="${index}" 

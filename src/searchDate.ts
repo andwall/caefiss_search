@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { customElement, property, query } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
 
@@ -11,6 +11,7 @@ import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./Se
  */
 @customElement('search-date')
 export class DateSearch extends LitElement{
+
   @property()
   entityName: string = '';
 
@@ -35,31 +36,19 @@ export class DateSearch extends LitElement{
   @property()
   include: boolean = false;
 
-  @state()
   private context: string = '';
-
-  @state()
   private operation: Operation = Operation.Delete;
-
-  @state()
   private findText: string = '';
-
-  @state()
   private condition: Condition = Condition.Equal;
-
-  @state()
   private date1?: Date;
-  
-  @state()
-  private date2?: Date;  
-  
-  @state()
+  private date2?: Date;
+  private date1Id: string = 'date1';  
+  private date2Id: string = 'date2';  
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
 
+  /* For styling */ 
   @query('#include-checkbox')
   private includeCheckbox?: HTMLInputElement;
-
-  /* For styling */ 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "on", name: "on", icon: "&#9737;", condition: Condition.On },
     { id: "between", name: "between", icon: "&harr;", condition: Condition.Between },
@@ -277,35 +266,33 @@ export class DateSearch extends LitElement{
     if(this.checked.include) this._dispatchMyEvent();
   }
   
-  _changeDate(event: Event): void{
+  _setDate(event: Event): void{
     const target = event.target as HTMLInputElement;
     let date = target.value as unknown as Date; 
-    target.id === "date1" ? this.date1 = date : this.date2 = date;
+    target.id === this.date1Id ? this.date1 = date : this.date2 = date;
     this.operation = this.date1 || this.date2 ? Operation.Change : Operation.Delete; //check if the value is empty
     this._dispatchMyEvent();
   }
 
-  _changeCondition(event: Event): void{
+  _setCondition(event: Event): void{
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
     if(this.operation === Operation.Change || this.condition === Condition.NotNull)
       this._dispatchMyEvent();
   }
 
-  _generateFindText(): string{
-    let findText = "";
+  _setFindText(): void{
     if(this.date1 && !this.date2){
-      findText = this.date1.toString();
+      this.findText = this.date1.toString();
     }else if(!this.date1 && this.date2){
-      findText = this.date2.toString();
+      this.findText = this.date2.toString();
     }else if(this.date1 && this.date2){
-      findText = `${this.date1} ${this.date2}`;
+      this.findText = `${this.date1} ${this.date2}`;
     }
-    return findText;
   }
 
   _dispatchMyEvent(): void{
-    this.findText = this._generateFindText();
+    this._setFindText();
     this._setOperation();
 
     let evt: SearchEvent = {
@@ -343,7 +330,7 @@ export class DateSearch extends LitElement{
     this.operation = this.condition === Condition.NotNull ||  this.findText ? Operation.Change : Operation.Delete;
   }
 
-  _processDisplayName(): string{
+  _formatDisplayName(): string{
     if(this.displayName.indexOf('(YYYY') > -1){
       return `${this.displayName.slice(0, this.displayName.indexOf('(YYYY'))} <span class="date-format" aria-hidden="true">${this.displayName.slice(this.displayName.indexOf('(YYYY'))}</span>`;
     }else{
@@ -360,14 +347,14 @@ export class DateSearch extends LitElement{
             <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
             <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
           </div>
-            <h4 id="display-name">${unsafeHTML(this._processDisplayName())}</h4>
+            <h4 id="display-name">${unsafeHTML(this._formatDisplayName())}</h4>
         </div>
       
         <!-- Conditions & Input Container -->
         <div class="input-container">
           <div class="condition-wrapper">
             <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
-            <select @change=${this._changeCondition} id="condition-btn" aria-labelledby="display-name condition-label">
+            <select @change=${this._setCondition} id="condition-btn" aria-labelledby="display-name condition-label">
               <!-- Populate conditions -->
               ${this.conditions?.map((condition, key) => {
                 return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
@@ -377,9 +364,9 @@ export class DateSearch extends LitElement{
 
           <!-- Date Search --> 
           <div class="date-search-wrapper">
-            <input @change=${ this._changeDate } type="date" class="input" id="date1" aria-labelledby="display-name"></input>
+            <input @change=${ this._setDate } type="date" class="input" id="${this.date1Id}" aria-labelledby="display-name"></input>
             <span class="dash">-</span>
-            <input @change=${ this._changeDate } type="date" class="input" id="date2" aria-labelledby="display-name"></input>
+            <input @change=${ this._setDate } type="date" class="input" id="${this.date2Id}" aria-labelledby="display-name"></input>
           </div>
         </div>
       </div>
