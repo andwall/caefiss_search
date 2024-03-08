@@ -252,11 +252,12 @@ export class TextSearch extends LitElement {
   _setCondition(event: Event): void {
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    this._dispatchMyEvent();
+    if(this.operation === Operation.Change || this.condition == Condition.Null || this.condition === Condition.NotNull)
+      this._dispatchMyEvent();
   }
 
   _setOperation(): void{
-    this.operation = this.findText || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete;
+    this.operation = this.findText || this.condition === Condition.Null || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete;
   }
 
   _dispatchMyEvent(): void {

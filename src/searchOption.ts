@@ -1,5 +1,5 @@
 import { LitElement, html, css, TemplateResult } from "lit";
-import { customElement, property, query } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { Condition, EntityInfo, Operation, OptionSet, SearchEvent, SearchTypes } from "./SearchTypes";
 import { Ref, createRef, ref } from "lit/directives/ref.js";
@@ -45,7 +45,6 @@ export class OptionSearch extends LitElement {
   
   private context: string = '';
   private operation: Operation = Operation.Delete;
-  private findText: string = '';
   private condition: Condition = Condition.NotIn;
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
   private selectedIndex: number = 0; 
@@ -53,13 +52,14 @@ export class OptionSearch extends LitElement {
   private optionData: OptionSet[] = [];
   private selectedData: OptionSet[] = [];
   private isFirstVisit: boolean = true;
-  private statusMessage: string = "Please wait, getting data :)";
+  @state() private statusMessage: string = "Please wait, getting data :)";
 
   /* Used for styling purposes */
   @query('.options-wrapper') private optionsWrapper?: HTMLElement;
   @query('#options-list-container') private optionsContainer?: HTMLElement;
   @query('.select-btn') private selectBtn?: HTMLElement;
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
+  @query('#status-message') private statusMessageEl?: HTMLLIElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "in", name: "in", icon: "&ni;", condition: Condition.In},
@@ -309,6 +309,10 @@ export class OptionSearch extends LitElement {
     .options-list-info-message{
       background-color: #d7faff;
       cursor: auto;
+    }    
+    
+    .error-background-color{
+      background-color: #ffd7d7;
     }
 
     .options-list .options-list-item{
@@ -484,16 +488,22 @@ export class OptionSearch extends LitElement {
 
   /* Responsible for fetching Option's data */
   _getData(): void {
-    let util = new CAEFISS();
-    let data = util.getOptionSet(this.entityName, this.fieldName);
-    data.forEach((d) => {
-      if(!this.optionData.some(obj => obj.key === d.key)) this.optionData.push(d); //avoid duplicates 
-    });
-    this.requestUpdate();
+    try {
+      let util = new CAEFISS();
+      let data = util.getOptionSet(this.entityName, this.fieldName);
+      data.forEach((d) => {
+        if(!this.optionData.some(obj => obj.key === d.key)) this.optionData.push(d); //avoid duplicates 
+      });
+      this.statusMessageEl?.classList.remove('error-background-color');
+      this.requestUpdate();
+    } catch (err) {
+      console.log(err);
+      this.statusMessageEl?.classList.add('error-background-color'); 
+      this.statusMessage = "Error: could not get data"; 
+    }
   }
 
   _dispatchMyEvent(): void {
-    this._setFindText();
     this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Option,
@@ -504,7 +514,7 @@ export class OptionSearch extends LitElement {
       to: this.to,
       fieldName: this.fieldName,
       displayName: this.displayName,
-      findText: this.findText,
+      findText: JSON.stringify(this.selectedData),
       condition: this.condition,
       operation: this.operation,
       context: '',
@@ -524,15 +534,11 @@ export class OptionSearch extends LitElement {
   _setCondition(event: Event): void {
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.operation === Operation.Change || this.condition === Condition.NotIn || this.condition === Condition.NotNull) this._dispatchMyEvent();
+    if(this.operation === Operation.Change || this.condition === Condition.Null || this.condition === Condition.NotNull) this._dispatchMyEvent();
   }
 
-  _setFindText(): void {
-    this.findText = JSON.stringify(this.selectedData);
-  }
-  
   _setOperation(): void{
-    this.operation = this.selectedData.length > 0 || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
+    this.operation = this.selectedData.length > 0 || this.condition === Condition.Null || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
   }
   
   /* Responsible for adding selected data to an array that will be passed in the custom event; Support multi selects*/
@@ -587,7 +593,7 @@ export class OptionSearch extends LitElement {
   _toggleOptions(): void {
     this.optionsWrapper?.classList.toggle('active');
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
-    if(this.isFirstVisit){
+    if(this.isFirstVisit){ //lazy loading
       setTimeout(() => {
         this._getData();
         this.isFirstVisit = false;
@@ -671,7 +677,7 @@ export class OptionSearch extends LitElement {
   
             <div class="options-content">
               <ul role="listbox" tabindex="-1" class="options-list" id="options-list-container">
-                ${this.optionData.length <= 0 ? html `<li class="options-list-info-message">&#x1F6c8;&nbsp;${this.statusMessage}` : ''}
+                ${this.optionData.length <= 0 ? html `<li id="status-message" class="options-list-info-message">&#x1F6c8;&nbsp;${this.statusMessage}` : ''}
                 ${this.optionData.map((data, index) => {
                   return html`
                     <li id="${index}" 

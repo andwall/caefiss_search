@@ -45,13 +45,12 @@ export class LookupSearch extends LitElement {
   
   private context: string = '';
   private operation: Operation = Operation.Delete;
-  private findText: string = '';
   private condition: Condition = Condition.Equal;
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
   private selectedIndex: number = 0; 
   private uniqueRef: Ref<HTMLDivElement> = createRef(); //uniquely identifies "this" element
   private isFirstVisit: boolean = true;
-  private statusMessage: string = "Please wait, getting data :)";
+  @state() private statusMessage: string = "Please wait, getting data :)";
 
   /* Holds data for lookup */
   private lookupData: string[] = [];
@@ -63,6 +62,7 @@ export class LookupSearch extends LitElement {
   @query('.lookup-wrapper') private lookupWrapper?: HTMLElement;
   @query('#lookup-options-container') private lookupOptionsContainer?: HTMLElement;
   @query('.select-btn') private selectBtn?: HTMLElement;
+  @query('#status-message') private statusMessageEl?: HTMLLIElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
@@ -245,6 +245,10 @@ export class LookupSearch extends LitElement {
       cursor: auto;
     }
 
+    .error-background-color{
+      background-color: #ffd7d7;
+    }
+
     .lookup-options .lookup-option{
       border-radius: 5px;
       padding: 5px;
@@ -415,17 +419,23 @@ export class LookupSearch extends LitElement {
    /* Responsible for fetching lookup data */
   _getData(): void {
     let tempSet: Set<string> = new Set<string>();
-    let util = new CAEFISS();
-    let data = util.getLookup(this.entityName, this.fieldName);
-    data.forEach((d) => {
-      if(d) tempSet.add(d);
-    });
-    this.lookupData = [...tempSet];
-    this.requestUpdate();
+    try{
+      let util = new CAEFISS();
+      let data = util.getLookup(this.entityName, this.fieldName);
+      data.forEach((d) => {
+        if(d) tempSet.add(d);
+      });
+      this.lookupData = [...tempSet];
+      this.statusMessageEl?.classList.remove('error-background-color');
+      this.requestUpdate();
+    } catch(err) {
+      console.log(err);
+      this.statusMessageEl?.classList.add('error-background-color');
+      this.statusMessage = 'Error: could not get data';
+    }
   }
 
   _dispatchMyEvent(): void {
-    this._setFindText();
     this._setOperation();
     let evt: SearchEvent = {
       type: SearchTypes.Lookup,
@@ -436,7 +446,7 @@ export class LookupSearch extends LitElement {
       to: this.to,
       fieldName: this.fieldName,
       displayName: this.displayName,
-      findText: this.findText,
+      findText: this.selectedData.toString(),
       condition: this.condition,
       operation: this.operation,
       context: '',
@@ -456,16 +466,12 @@ export class LookupSearch extends LitElement {
   _setCondition(event: Event): void {
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.operation === Operation.Change || this.condition === Condition.NotIn || this.condition === Condition.NotNull) 
+    if(this.operation === Operation.Change || this.condition === Condition.Null || this.condition === Condition.NotNull)
       this._dispatchMyEvent();
   }
 
-  _setFindText(): void {
-    this.findText = this.selectedData.toString();
-  }
-
   _setOperation(): void{
-    this.operation = this.findText || this.condition === Condition.NotIn || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
+    this.operation = this.selectedData.length > 0 || this.condition === Condition.Null || this.condition === Condition.NotNull ? Operation.Change : Operation.Delete; 
   }
   
   /* Responsible for adding selected data to selectedData array; supports multi select */
@@ -521,7 +527,7 @@ export class LookupSearch extends LitElement {
   _toggleLookup(): void {
     this.lookupWrapper?.classList.toggle('active');
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
-    if(this.isFirstVisit){
+    if(this.isFirstVisit){ //lazy loading
       setTimeout(() => {
         this._getData();
         this.isFirstVisit = false;
@@ -610,7 +616,7 @@ export class LookupSearch extends LitElement {
               <input id="lookupSearch" @input=${this._filterLookup} type="text" placeholder="Search" aria-labelledby="display-name"></input>
             </div>
             <ul role="listbox" tabindex="-1" class="lookup-options" id="lookup-options-container">
-              ${this.lookupData.length <= 0 ? html `<li class="lookup-info-message"> &#x1F6C8;&nbsp;${this.statusMessage}` : ''}
+              ${this.lookupData.length <= 0 ? html `<li id="status-message' class="lookup-info-message"> &#x1F6C8;&nbsp;${this.statusMessage}` : ''}
               ${this.lookupData.length > 0 && !this.isSearchValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: ''}
               ${this.filterData.map((data, index) => {
                 return html`

@@ -230,14 +230,18 @@ export class CheckboxSearch extends LitElement {
 
   /* Responsible for getting option set to populate checkboxes */
   _getData(){
-    let util = new CAEFISS();
-    let data: OptionSet[] = util.getOptionSet(this.entityName, this.fieldName);
-    data.forEach(d => {
-      if(!this.optionData.some(obj => obj.key === d.key)){ //remove duplicates
-        this.optionData.push(d);
-        this.checkedOptions.set(d.value, false);
-      } 
-    });
+    try {
+      let util = new CAEFISS();
+      let data: OptionSet[] = util.getOptionSet(this.entityName, this.fieldName);
+      data.forEach(d => {
+        if(!this.optionData.some(obj => obj.key === d.key)){ //remove duplicates
+          this.optionData.push(d);
+          this.checkedOptions.set(d.value, false);
+        } 
+      });
+    }catch(err) {
+      console.log(err);
+    }
   }
 
   _changeMessage(event: Event): void {

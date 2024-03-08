@@ -277,7 +277,7 @@ export class DateSearch extends LitElement{
   _setCondition(event: Event): void{
     let selectedIndex = Number((event.target as HTMLSelectElement).selectedIndex);
     this.condition = this.conditions[selectedIndex].condition;
-    if(this.operation === Operation.Change || this.condition === Condition.NotNull)
+    if(this.operation === Operation.Change || this.condition === Condition.NotNull || this.condition === Condition.Null)
       this._dispatchMyEvent();
   }
 
@@ -288,6 +288,8 @@ export class DateSearch extends LitElement{
       this.findText = this.date2.toString();
     }else if(this.date1 && this.date2){
       this.findText = `${this.date1} ${this.date2}`;
+    }else{
+      this.findText = "";
     }
   }
 
@@ -327,7 +329,7 @@ export class DateSearch extends LitElement{
   }
 
   _setOperation(): void{
-    this.operation = this.condition === Condition.NotNull ||  this.findText ? Operation.Change : Operation.Delete;
+    this.operation = this.condition === Condition.NotNull || this.condition === Condition.Null ||  this.findText ? Operation.Change : Operation.Delete;
   }
 
   _formatDisplayName(): string{
