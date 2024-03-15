@@ -4,7 +4,8 @@ enum SearchTypes {
     Lookup = "lookup",
     twoOption = "twooption",
     Checkbox = "checkbox",
-    Option = "option"
+    Option = "option",
+    Number = "number"
 }
 
 enum Operation {

@@ -97,7 +97,7 @@ export class CAEFISS {
 
           for (var i = 0; i < _optionAttributeMetadata.Options.length; i++) {                      
             var key = _optionAttributeMetadata.Options[i].Label.UserLocalizedLabel.Label;
-            var value = _optionAttributeMetadata.Options[i].value;
+            var value = _optionAttributeMetadata.Options[i].Value;
             data.push(   { key: key, value: value }  as OptionSet  );
           }
         }
@@ -144,10 +144,10 @@ export class CAEFISS {
     // create a view layout
     public createLayoutXml(entityId : string, fields : string[]) : string {
       var layoutXml : string = `
-          <grid name='resultset' object='3' jump='name' select='1' preview='1' icon='1'>
+          <grid name='resultset' object='112' jump='name' select='1' preview='1' icon='1'>
               <row name='result' id='${entityId}'>`;
       fields.forEach(function(attr) : void {
-          layoutXml += `<cell name='${attr}' width='150' /> `;
+          layoutXml += `<cell name='${attr}' width='100' /> `;
       });
       layoutXml += `</row></grid>`;
       return layoutXml;
