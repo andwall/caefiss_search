@@ -1,214 +1,172 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CCAEFISS Search</title>
-    <link rel="stylesheet" href="./src/index.css" />  
-    <script type="module" src="/src/searchText.ts"></script>
-    <script type="module" src="/src/searchDate.ts"></script>
-    <script type="module" src="/src/searchLookup.ts"></script>
-    <script type="module" src="/src/searchTwoOption.ts"></script>
-    <script type="module" src="/src/searchCheckbox.ts"></script>
-    <script type="module" src="/src/searchOption.ts"></script>
-    <link rel="stylesheet" href="/src/styles/styles.css" />
-  </head>
-  <body>
-    <div class="app">
-    <div class="row">
-      <h1>CCAEFISS Search</h1>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCAEFISS Search</title>
+  <link rel="stylesheet" href="./src/index.css" />
+  <script type="module" src="/src/searchText.ts"></script>
+  <script type="module" src="/src/searchDate.ts"></script>
+  <script type="module" src="/src/searchLookup.ts"></script>
+  <script type="module" src="/src/searchTwoOption.ts"></script>
+  <script type="module" src="/src/searchCheckbox.ts"></script>
+  <script type="module" src="/src/searchOption.ts"></script>
+  <script type="module" src="/src/searchNumber.ts"></script>
+  <!-- <link rel="stylesheet" href="/src/styles/styles.css" /> -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+  <style>
+    body {
+      padding: 25px;
+      width: 100%;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="row">
+    <div class="col-sm-12">
+      <h1>Search</h1>
     </div>
-      <!-- <h2 id="showText"></h2>
-          <search-text id="vNumber" displayName="V Number" entityName="incident" fieldName="V Number" alias="v_number_alias" parentEntityName="parent"></search-text>
-          
-        <search-twooption id="searchTwo"></search-twooption> 
-        <search-twooption id="searchTwo"></search-twooption> 
-          
-          <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>  <search-date id="searchDate" entityName="Time of Immunization" fieldName="fieldName" displayName="Date of Vaccine Administration"></search-date>
-        <div style="padding-top: 25px; width: 444px;">
-        <div style="padding-top: 25px; width: 444px;">
-  
-          <search-lookup id="searchLookup2" entityName="searchLookup" fieldName="Search Lookup" displayName="Immunizing Agent"></search-lookup>  
-          <search-lookup id="searchLookup" entityName="searchLookup" fieldName="Search Lookup" displayName="Search Lookup"></search-lookup>
-  
-        </div> 
-        
-        <div>
-          <h2 id="showText2"></h2>
-          <search-text id="man1" displayName="Manufacturer #1" entityName="manufacturer" fieldName="manufacturer_1" parentEntityName="incident"></search-text>
-  
-  
+  </div>
+
+  <div class="row">
+    <div class="col-sm-12">
+      Search table "component"
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-12">
+      
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="card-body">
+      <div>
+        <div class="row">
+
+          <div class="col-sm-3">
+            <search-text includeLock="true" id="vNumber" displayName="V number" entityName="incident" parentEntityName=""
+              fieldName="title"></search-text>
+          </div>
+
+          <div class="col-sm-3">
+            <search-text id="searchText" displayName="search text test" entityName="incident" parentEntityName=""
+              fieldName="title"></search-text>
+          </div>
+
+          <div class="col-sm-3">
+            <search-twooption displayName="Status" entityName="incident" parentEntityName="" option1="ACTIVE"
+              option2="INACTIVE" option1text="ACTIVE" option2text="INACTIVE" fieldName="statuscode">
+            </search-twooption>
+          </div>
+
+          <div class="col-sm-3">
+            <search-date displayName="Created On" entityName="incident" parentEntityName="" fieldName="createdon">
+            </search-date>
+          </div>
+
         </div>
-    </div> -->
+        <div class="row">
+          <div class="col-sm-11">
+          </div>
+          <div class="col-sm-1">
+            <button onclick="search();">Search</button>
+          </div>
+        </div>
 
-      <div class="card">
-        <div id="collapseTwo" class="collapse" data-parent="#accordionExample">
-          <div class="card-body">
-
-            <!-- At time of immunization section -->
-            <div>
-              <div class="row">
-                <div class="col-sm-6">
-                  <search-text id="vNumber" displayName="V number" entityName="v_number" fieldName="V number"></search-text> 
-                </div>
-              </div>
-              <div class="row">
-              <div class="col-sm-6">
-                  <search-text displayName="Province/Territory" entityName="incident" fieldName="caefiss_ati_province_territory"></search-text>
-                </div>
-              
-              <div class="col-sm-3">
-                  <search-text displayName="Other" entityName="incident" fieldName="caefiss_ati_other_province_territory"></search-text>
-                </div>
-                
-                <div class="col-sm-3">
-                  <search-text displayName="Aboriginal status" entityName="incident" fieldName="caefiss_ati_indigenous_status"></search-text>
-                </div>
-                
-                
-              </div>
-              
-              <hr>
-              <div class="row">
-                <div class="col-sm-6">
-                <search-date displayName="Date of vaccine administration(YYYY-MM-DD)" 
-                  entityName="incident" fieldName="caefiss_ati_date_of_vaccine_admin">
-                </search-date>
-                </div>            
-                <div class="col-sm-3">
-                  <search-text displayName="Time" entityName="incident" fieldName="caefiss_ati_time"></search-text>
-                </div>                       
-              </div>
-          
-              <hr>
-            
-            
-            <div class="row">
-                <div class="col-sm-6">
-                <search-date id="searchDate" displayName="Date of birth(YYYY-MM-DD)" 
-                  entityName="incident" fieldName="caefiss_ati_date_of_birth">
-                </search-date>
-                </div>            
-                <div class="col-sm-3">
-                  <search-text displayName="Age" entityName="incident" fieldName="caefiss_ati_age"></search-text>
-                </div>    
-              <div class="col-sm-3">
-                  <search-text displayName="Age group" entityName="incident" fieldName="caefiss_ati_age_group"></search-text>
-                </div>                    
-              </div>
-          
-            
-            <hr>
-            
-            <div class="row">
-                          
-                <div class="col-sm-12">
-                  <search-text displayName="Comments" entityName="incident" fieldName="caefiss_ati_comments"></search-text>
-                </div>    
-                                  
-              </div>
-            
-            </div> 
-            
-            <hr>
-
-            <div class="row">
-                          
-                <div class="col-sm-12">
-                  <search-lookup id="lookupTest" isMultiSelect="true" displayName="Lookup Test" entityName="incident" fieldName="caefiss_ati_comments"></search-lookup>
-                </div>    
-                <!-- <div class="col-sm-12">
-                  <search-text displayName="test" entityName="incident" fieldName="caefiss_ati_comments"></search-text>
-                </div>    
-                                   --><div class="col-sm-12">
-                  <search-lookup displayName="Comments" entityName="incident" fieldName="caefiss_ati_comments"></search-lookup>
-                </div>  
-              </div>
-            
+        <!-- Vaccines -->
+        <div style="padding: 25px 0;">
+          <div id="boldText">
+            <caption>Vaccines</caption>
+          </div>
+          <div class="row">
+            <div class="col-sm-6">
+              <search-lookup id="searchLookup" displayName="Search Lookup" entityName="caefiss_cd_immunizing_agents_mls"
+                from="caefiss_cd_immunizing_agents_mlsid" parentEntityName="caefiss_aefi_vaccines"
+                parentEntityId="caefiss_id" to="caefiss_vac_cd_immunizing_agents_mls" fieldName="caefiss_english_value"
+                isMultiSelect="true">
+              </search-lookup>
             </div>
 
-            <div class="row">
-              <div class="col-sm-12">
-                <search-twooption displayName="Comments" entityName="incident" fieldName="caefiss_ati_comments"></search-twooption>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="col-sm-12">
-                <search-checkbox id="searchCheckbox" displayName="Search Checkbox" entityName="incident" fieldName="caefiss_ati_comments"></search-checkbox>
-              </div>
-            </div>
-            
-            <div class="row">
-              <div class="col-sm-12">
-                <search-option id="searchOption" displayName="Search Option" entityName="incident" fieldName="caefiss_ati_comments"></search-option>
-              </div>
+
+            <div class="col-sm-6">
+              <search-lookup id="searchLookup2" displayName="Search Lookup 2" entityName="caefiss_cd_immunizing_agents_mls"
+                from="caefiss_cd_immunizing_agents_mlsid" parentEntityName="caefiss_aefi_vaccines"
+                parentEntityId="caefiss_id" fieldName="caefiss_vac_immunizing_agent_manufactureren" isMultiSelect="false">
+              </search-lookup>
             </div>
           </div>
         </div>
+        <!-- End of Vaccines -->
+
+        <div class="row">
+          <div class="col-sm-4">
+            <search-checkbox id="searchCheckbox" displayName="Vaccine administered without AEFI" entityName="incident"
+              fieldName="caefiss_fol_vaccine_administered_without_aefi">
+            </search-checkbox>
+          </div>
+
+          <div class="col-sm-4">
+            <search-option id="searchOption" displayName="Search option" entityName="search_option_test"
+              fieldName="caefiss_ie_did_aefi_follow_inc_imm" parentEntityName="" parentEntityId="" to="" include="true">
+            </search-option>
+          </div>
+          <div class="col-sm-4">
+            <search-option id="searchOption2" displayName="Search Option 2" entityName="caefiss_aefi_acca"
+              from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+              fieldName="caefiss_acca_prim_reason_report">
+            </search-option>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-6">
+            <search-number id="searchNumber" displayName="Search Number" entityName="entityName" from=""
+              parentEntityName="parentEntityName" to="" fieldName="">
+            </search-number>
+          </div>
+          <div class="col-sm-6">
+            <search-number id="searchNumber2" displayName="Search Number 2" entityName="entityName" from=""
+              parentEntityName="parentEntityName" to="" fieldName="">
+            </search-number>
+          </div>
+        </div>
+       
       </div>
-    </div>
+    </div> <!--End of card body-->
+  </div>
 
-    <script type="text/javascript">
-      let vNum = document.getElementById('vNumber');
-      let showText = document.getElementById('showText');
-      vNum.addEventListener('search-text-event', (e) =>{
-        console.log(e.detail)
-      });   
-      
-      let searchDate = document.getElementById('searchDate');
-      searchDate.addEventListener('search-date-event', (e) =>{
-        console.log(e.detail)
-      })
-      // let zNum = document.getElementById('man1');
-      // let showText2 = document.getElementById('showText2');
-      // zNum.addEventListener('search-text-event', (e) =>{
-      //   console.log(e.detail)
-      //   showText2.innerHTML = e.detail.displayName;
-      // })
+  <script type="text/javascript">
+    let vNum = document.getElementById('vNumber');
+    let showText = document.getElementById('showText');
+    vNum.addEventListener('search-text-event', (e) => {
+      console.log(e.detail);
+    });
 
+    document.getElementById('searchText').addEventListener('search-text-event', (e) => {
+      console.log(e.detail);
+    });
 
-      
-      // let x;
-      // let y;
-      // let searchLookup = document.getElementById('searchLookup');
-      // console.log(searchLookup.attributes)
-      // searchLookup.addEventListener('search-lookup-event', (e) => {
-      //   console.log(e.detail)
-      //   x = e.detail.context;
-      //   console.log(x == y)
-      // })
+    document.getElementById('searchLookup').addEventListener('search-lookup-event', (e) => {
+      console.log(e.detail);
+    });
 
-      // let searchLookup2 = document.getElementById('searchLookup2');
-      // searchLookup2.addEventListener('search-lookup-event', (e) => {
-      //   console.log(e.detail)
-      // })
+    document.getElementById('searchOption').addEventListener('search-option-event', (e) => {
+      console.log(e.detail);
+    });
+    
+    document.getElementById('searchCheckbox').addEventListener('search-checkbox-event', (e) => {
+      console.log(e.detail);
+    });
+  </script>
+</body>
 
-      // let searchTwo = document.getElementById('searchTwo');
-      // searchTwo.addEventListener('search-twooption-event', (e) => {
-      //   console.log(e.detail)
-      // })
-      
-      let lookupTest = document.getElementById('lookupTest');
-      lookupTest.addEventListener('search-lookup-event', (e) => {
-        console.log(e.detail);
-      });
-
-      let check = document.getElementById('searchCheckbox');
-      check.addEventListener('search-checkbox-event', e => {
-        console.log(e.detail);
-      });
-
-      let searchOption = document.getElementById('searchOption');
-      searchOption.addEventListener('search-option-event', e => {
-        console.log(e.detail);
-      });
-
-      // window.addEventListener('focus', e => {
-      //   if(e.target) console.log(e.target);
-      // }, true);
-
-    </script>
-  </body>
 </html>

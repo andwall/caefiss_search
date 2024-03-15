@@ -34,6 +34,9 @@ export class TextSearch extends LitElement {
   @property()
   include: boolean = false;
 
+  @property()
+  includeLock: boolean = false;
+
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private findText: string = '';
@@ -42,12 +45,12 @@ export class TextSearch extends LitElement {
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
+    { id: "beginsWith", name: "begins with", icon: "A..", condition: Condition.BeginsWith },
+    { id: "endsWith", name: "ends with", icon: "..A", condition: Condition.EndsWith }, 
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
     { id: "notEquals", name: "not equals", icon: "&ne;", condition: Condition.NotEqual },
     { id: "contains", name: "contains", icon: "&ni;", condition: Condition.Contains }, 
     { id: "not in", name: "not in", icon: "&notni;", condition: Condition.NotIn }, 
-    { id: "beginsWith", name: "begins with", icon: "A..", condition: Condition.BeginsWith },
-    { id: "endsWith", name: "ends with", icon: "..A", condition: Condition.EndsWith }, 
     { id: "isNull", name: "is null", icon: "&empty;", condition: Condition.Null },
     { id: "notNull", name: "not null", icon: "!&empty;", condition: Condition.NotNull }
   ]; 
@@ -240,7 +243,13 @@ export class TextSearch extends LitElement {
   protected override firstUpdated(): void {
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
     this.condition = this.conditions[0].condition;
-    this.includeCheckbox!.checked = this.checked.include;
+
+    if(this.includeLock){
+      this.include = true;
+      this.checked.include = true;
+    }else{ // no include lock so set the include checkbox state
+      this.includeCheckbox!.checked = this.checked.include;
+    }
     if(this.checked.include) this._dispatchMyEvent();
   }
 
@@ -274,7 +283,7 @@ export class TextSearch extends LitElement {
       findText: this.findText,
       condition: this.condition,
       operation: this.operation,
-      context: '',
+      context: this.context,
       option1: "",
       option2: "",
       checked: this.checked
@@ -299,11 +308,13 @@ export class TextSearch extends LitElement {
       <div class="display-name-container">
 
         <!-- Custom Checkbox -->
-        <div class="checkbox-container">
-          <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
-          <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
-        </div>
-          <h4 id="display-name">${this.displayName}</h4>
+        ${ !this.includeLock ? html ` <!-- Only show if there's no include lock -->
+          <div class="checkbox-container">
+            <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+            <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+          </div>` : ''
+        }
+        <h4 id="display-name">${this.displayName}</h4>
       </div>
       
       <!-- Conditions & input container -->

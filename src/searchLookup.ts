@@ -41,7 +41,10 @@ export class LookupSearch extends LitElement {
   alias: string = '';
   
   @property()
-  isMultiSelect: boolean = false;
+  isMultiSelect: boolean = false;  
+  
+  @property()
+  include: boolean = false;
   
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -63,6 +66,7 @@ export class LookupSearch extends LitElement {
   @query('#lookup-options-container') private lookupOptionsContainer?: HTMLElement;
   @query('.select-btn') private selectBtn?: HTMLElement;
   @query('#status-message') private statusMessageEl?: HTMLLIElement;
+  @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "equals", name: "equals", icon: "&equals;", condition: Condition.Equal },
@@ -84,11 +88,7 @@ export class LookupSearch extends LitElement {
     #main-container{
       width: 100%;
     }    
-    
-    #display-name{
-      font-weight: bold;
-    }
-
+   
     .hidden{
       display: none;
     }
@@ -105,6 +105,111 @@ export class LookupSearch extends LitElement {
       clip: rect(1px, 1px, 1px, 1px); /*maybe deprecated but we need to support legacy browsers */
       clip-path: inset(50%); /*modern browsers, clip-path works inwards from each corner*/
       white-space: nowrap; /* added line to stop words getting smushed together (as they go onto seperate lines and some screen readers do not understand line feeds as a space */
+    }    
+    
+    /* Display name styling */
+    .display-name-container{
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    } 
+    
+    #display-name{
+      font-weight: bold;
+    }
+    
+    /* Custom checkbox styling */
+    .checkbox-container{
+      padding-top: 0.5em;
+    }
+
+    [type="checkbox"]:not(:checked),
+    [type="checkbox"]:checked {
+      position: absolute;
+      left: -9999px;
+    }
+
+    [type="checkbox"]:not(:checked) + label,
+    [type="checkbox"]:checked + label {
+      position: relative;
+      padding-left: 1em;
+      cursor: pointer;
+    }
+
+    /* checkbox aspect */
+    [type="checkbox"]:not(:checked) + label:before{
+      content: '';
+      position: absolute;
+      left: 0; top: 0;
+      width: 0.65em; height: 0.65em;
+      border: 3px solid #1e1e1e;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+    }
+
+    [type="checkbox"]:checked + label:before{
+      content: '';
+      position: absolute;
+      left: 0; top: 0;
+      width: 0.65em; height: 0.65em;
+      border: 3px solid green;
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+    } 
+    
+    /* checked mark aspect */
+    [type="checkbox"]:not(:checked) + label::after,
+    [type="checkbox"]:checked + label::after {
+      // content: '✔';
+      content: "✓";
+      position: absolute;
+      top: -0.1em;
+      left: 0.2em;
+      font-weight: 900;
+      font-size: 1em;
+      line-height: 1;
+      color: green;
+      transition: all 0.2s ease-in-out 0s;
+    }
+
+    /* checked mark aspect changes */
+    [type="checkbox"]:not(:checked) + label:after {
+      opacity: 0;
+      transform: scale(0);
+    }
+
+    [type="checkbox"]:checked + label:after {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* disabled checkbox */
+    [type="checkbox"]:disabled:not(:checked) + label:before,
+    [type="checkbox"]:disabled:checked + label:before {
+      box-shadow: none;
+      border-color: #bbb;
+      background-color: #ddd;
+    }
+
+    [type="checkbox"]:disabled:checked + label:after {
+      color: #999;
+    }
+    
+    [type="checkbox"]:disabled + label {
+      color: #aaa;
+    }
+    
+    /* accessibility */
+    [type="checkbox"]:not(:checked):focus + label:before {
+      // border: 3px solid #0535d2;
+      border: 3px solid #66afe9;
+    }    
+    
+    [type="checkbox"]:checked:focus + label:before {
+      // border: 3px solid #0535d2;
+      border: 3px solid #66afe9;
     }
 
     /* Condition dropdown styling */
@@ -386,7 +491,12 @@ export class LookupSearch extends LitElement {
   
   /* Responsible for various accessibility features and getting/setting data */ 
   override firstUpdated(): void {
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: false } as EntityInfo;
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this.condition = this.conditions[0].condition;
+    this.includeCheckbox!.checked = this.checked.include;
+    if(this.checked.include) this._dispatchMyEvent();
+
+
 
     /* Responsible for opening drop down when entering "enter" */
     this.selectBtn?.addEventListener('keydown', (e) => {
@@ -565,14 +675,24 @@ export class LookupSearch extends LitElement {
         </button>
       </div>
     `; 
+  } 
+  
+  _setChecked(event: Event): void {
+    this.checked.include = (event.target as HTMLInputElement).checked ? true : false; 
+    this._dispatchMyEvent();
   }
 
   override render(){
     return html `
       <div id="mainContent" ${ref(this.uniqueRef)} @click=${this._localAway} id="main-container">
         <div class="display-name-container">
+          <div class="checkbox-container">
+            <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+            <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+          </div>
           <h4 id="display-name">${this.displayName}</h4>
         </div>
+
         <!-- Drop down (conditions) -->
         <div class="condition-wrapper">
           <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
@@ -616,7 +736,7 @@ export class LookupSearch extends LitElement {
               <input id="lookupSearch" @input=${this._filterLookup} type="text" placeholder="Search" aria-labelledby="display-name"></input>
             </div>
             <ul role="listbox" tabindex="-1" class="lookup-options" id="lookup-options-container">
-              ${this.lookupData.length <= 0 ? html `<li id="status-message' class="lookup-info-message"> &#x1F6C8;&nbsp;${this.statusMessage}` : ''}
+              ${this.lookupData.length <= 0 ? html `<li id="status-message" class="lookup-info-message"> &#x1F6C8;&nbsp;${this.statusMessage}` : ''}
               ${this.lookupData.length > 0 && !this.isSearchValue ? html `<li class="lookup-info-message"> &#x1F6C8; Please enter 1 or more characters</li>`: ''}
               ${this.filterData.map((data, index) => {
                 return html`

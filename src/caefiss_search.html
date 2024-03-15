@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Search Prototype</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="./caefiss_bootstrap.css">
+  <script src="./caefiss_webcomponentsloader.js"></script>
+  <script src="./caefiss_polyfillsupport.js"></script>
+  <script src="./caefiss_jquery.3.3.1.js"></script>
+  <script src="./caefiss_popper.js"></script>
+  <script src="./caefiss_bootstrap.js"></script>
+  <script src="./caefiss_xlsx.js"></script>
+  <script src="ClientGlobalContext.js.aspx" type="text/javascript"></script>
+  <script type="module">
+    import { FilterBuilder } from './caefiss_components.js';
+    globalThis.fb = new FilterBuilder();
+
+    import { CAEFISS } from './caefiss_components.js';
+    globalThis.util = new CAEFISS();
+  </script>
+  <style>
+    h1 {
+      color: #cc0000;
+      font-size: 32px;
+      text-shadow: 0 1px 0 #d5d5d5;
+      font-family: "Myriad Pro", Arial, Helvetica, sans-serif;
+      margin-left: 5px;
+    }
+
+    h2 {
+      background: transparent;
+      border-top: none;
+      box-shadow: none;
+      color: #656666;
+      font-family: "Myriad Pro", Arial, Helvetica, sans-serif;
+      font-size: 29px;
+      float: none;
+      height: 65px;
+      margin-left: 0;
+      margin-top: 0;
+      padding: 20px 0 30px 0;
+      text-shadow: none;
+      width: 100%;
+    }
+
+    .btn {
+      font-size: 20px;
+    }
+
+    .btn-link,
+    .btn-link:hover {
+      font-weight: 400;
+      color: #000000;
+      background-color: transparent;
+    }
+
+    .btn-nav-accordion[aria-expanded="true"] .fa-chevron-down {
+      transform: rotate(180deg);
+    }
+
+    .fa-chevron-up {
+      transition: all 0.3s ease;
+    }
+
+    .btn-nav-accordion.collapsed .fa-chevron-up {
+      transform: rotate(180deg);
+    }
+
+    .fa,
+    .fa-chevron-up {
+      color: red;
+    }
+
+    img {
+      width: 50%;
+    }
+
+    Hr {
+      width: 100%;
+      display: inline-block;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    #boldText {
+      color: #2572b4;
+      font-size: 1.3em;
+      font-weight: normal;
+      padding: 5px 0 5px 5px;
+      text-align: left;
+    }
+
+    .card {
+      padding: 7px 0 7px 10px;
+      background: #fafafa;
+      border: none;
+      border-top: 1px solid #ccc;
+      border-bottom: 1px solid #ccc;
+      list-style-type: none !important;
+    }
+
+    .expand-collapse-btns {
+      gap: 10px;
+    }
+
+    .expand-collapse-btns .btn:focus {
+      outline: 1px solid #000;
+      box-shadow: none;
+    }
+
+    .well {
+      background: #fff;
+      border: 1px solid #ccc;
+      margin-bottom: 0;
+      padding: 5px;
+      border-radius: 0;
+      font-weight: normal;
+      width: 100%;
+    }
+
+    .fa,
+    .fa-chevron-up {
+      color: black;
+    }
+
+    .btn-info {
+      background-color: #4d4d4d;
+    }
+
+    .sticky-header{
+      padding: 5px 0;
+      box-shadow: 0 5px 15px rgba(0,0,0,.5);
+    }
+
+    .sticky-buttons{
+      background-color: #1a1a1a;
+      color: white;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .sticky-buttons:hover{
+      background-color: #000;
+      color: white;
+    }
+  </style>
+  <script>
+
+    $('document').ready(function () {
+      /* This is required for backspace to work in text input fields */
+      if (window.Sys && window.Sys.UI && window.Sys.UI.DomEvent && window.Sys.UI.DomEvent.prototype) {
+        window.Sys.UI.DomEvent.prototype.preventDefault = function () { };
+        window.Sys.UI.DomEvent.prototype.stopPropagation = function () { };
+      }
+
+      document.addEventListener('search-text-event', (e) => { fb.addSearchEvent(e.detail); });
+      document.addEventListener('search-date-event', (e) => { fb.addSearchEvent(e.detail); });
+      document.addEventListener('search-lookup-event', (e) => { fb.addSearchEvent(e.detail); });
+      document.addEventListener('search-option-event', (e) => { fb.addSearchEvent(e.detail); });
+      document.addEventListener('search-checkbox-event', (e) => { fb.addSearchEvent(e.detail); });
+      document.addEventListener('search-number-event', (e) => { fb.addSearchEvent(e.detail); });
+
+      window.parent.$('#DashboardScrollView').css('overflow', 'hidden');
+
+      // Expand all button click event
+      $("#expandAll").click(function () {
+        $(".collapse").collapse("show");
+      });
+      // Collapse all button click event
+      $("#collapseAll").click(function () {
+        $(".collapse").collapse("hide");
+      });
+
+
+      $('.collapse').on('shown.bs.collapse', function () {
+        var icons = $(this).parent().find('div > h5 > button > i');
+        if (icons && icons.length > 0) {
+          $(icons[0]).removeClass("fas fa-chevron-up").addClass("fa fa-chevron-down");
+        }
+      }).on('hidden.bs.collapse', function () {
+        var icons = $(this).parent().find('div > h5 > button > i');
+        if (icons && icons.length > 0) {
+          $(icons[0]).removeClass("fa fa-chevron-down").addClass("fas fa-chevron-up");
+        }
+      });
+
+    });
+  </script>
+</head>
+
+<body>
+
+  <div class="sticky-top">
+    <div class="row sticky-header">
+      <!-- <div class="col-sm-4"></div> -->
+
+      <div class="col-sm-12 sticky-buttons">
+        <button onclick="fb.search();" class="btn btn-info">Search</button>
+        <button onclick="fb.report();" class="btn btn-info">Report</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- first section -->
+  <div class="card-body">
+    <div>
+      <div class="row">
+        <div class="col-sm-3">
+          <search-text displayName="V number" entityName="incident" parentEntityName="" fieldName="title"
+            includeLock="true"></search-text>
+        </div>
+        <div class="col-sm-3">
+          <search-option displayName="Status" entityName="incident" parentEntityName=""
+            fieldName="statecode"></search-option>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End First Section -->
+
+  <!-- Expand Collapse Buttons-->
+  <div class="d-flex justify-content-end mb-4 mr-4 expand-collapse-btns">
+    <button class="btn " id="collapseAll">
+      <i class="fas fa-compress-alt"></i> Collapse all </button>
+    <button class="btn " id="expandAll">
+      <i class="fas fa-expand-alt"></i> Expand all </button>
+  </div>
+
+
+
+  <div class="overflow-auto" style="margin-bottom: 100%;">
+
+    <!-- Accordion Start -->
+    <div class="accordion" id="accordionExample">
+      <!-- Case info Start -->
+      <div class="card">
+        <div class="card-header" id="headingOne">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseOne"
+              aria-expanded="false" aria-controls="collapseOne">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspCase information </button>
+          </h5>
+        </div>
+        <div id="collapseOne" class="collapse" aria-labelledby="headingOne">
+          <div class="card-body">
+            <!-- Case section -->
+            <div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="AEFI ID" entityName="incident" parentEntityName=""
+                    fieldName="caefiss_ci_unique_episode"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Region #" entityName="incident" fieldName="caefiss_ci_region"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Impact LIN" entityName="incident"
+                    fieldName="caefiss_ci_impact_lin"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Impact #" entityName="incident" fieldName="caefiss_ci_impact"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Client ID" entityName="incident"
+                    fieldName="caefiss_client_id"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Manufacturer #1" entityName="incident"
+                    fieldName="caefiss_ci_manufacturer1"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Manufacturer #2" entityName="incident"
+                    fieldName="caefiss_ci_manufacturer2"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Manufacturer #3" entityName="incident"
+                    fieldName="caefiss_ci_manufacturer3"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Contact case #" entityName="incident"
+                    fieldName="caefiss_ci_contact_case"></search-text>
+                </div>
+                <div class="col-sm-6">
+                  <search-date displayName="Agency report received date(YYYY-MM-DD)" entityName="incident"
+                    fieldName="caefiss_ci_agency_report_received_date"></search-date>
+                </div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_ci_comments"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-text displayName="Last attachment by" entityName="incident"
+                    fieldName="caefiss_ci_last_attachment_by"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Case info end -->
+      <!-- ATI Start -->
+      <div class="card">
+        <div class="card-header" id="headingTwo">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo"
+              aria-expanded="false" aria-controls="collapseTwo">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspAt time of immunization </button>
+          </h5>
+        </div>
+        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
+          <div class="card-body">
+            <!-- At time of immunization section -->
+            <div>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-text displayName="Province/Territory" entityName="incident"
+                    fieldName="caefiss_ati_province_territory"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Other" entityName="incident"
+                    fieldName="caefiss_ati_other_province_territory"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Aboriginal status" entityName="incident"
+                    fieldName="caefiss_ati_indigenous_status"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-date displayName="Date of vaccine administration(YYYY-MM-DD)" entityName="incident"
+                    fieldName="caefiss_ati_date_of_vaccine_admin"></search-date>
+                </div>
+                <div class="col-sm-3">
+                  <search-option displayName="Time" entityName="incident" fieldName="caefiss_ati_time"></search-option>
+                </div>
+                <div class="col-sm-3">
+                  <search-option displayName="AM - PM" entityName="incident" parentEntityName=""
+                    fieldName="caefiss_ati_am_pm"></search-option>
+                </div>
+              </div>
+              <hr>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-date displayName="Date of birth(YYYY-MM-DD)" entityName="incident"
+                    fieldName="caefiss_ati_date_of_birth"></search-date>
+                </div>
+                <div class="col-sm-3">
+                  <search-number displayName="Age" entityName="incident" fieldName="caefiss_ati_age"></search-number>
+                </div>
+                <div class="col-sm-3">
+                  <search-option displayName="Age group" entityName="incident"
+                    fieldName="caefiss_atiagegroup"></search-option>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-option displayName="Sex" entityName="incident" parentEntityName=""
+                    fieldName="caefiss_ati_sex"></search-option>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-option displayName="Pregnant at Time of Immunization" entityName="incident"
+                    parentEntityName="" fieldName="caefiss_ati_pregnant"></search-option>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-number displayName="Gestation Weeks" entityName="incident" parentEntityName=""
+                    fieldName="caefiss_ati_weeks"></search-number>
+                </div>
+                <div class="col-sm-4">
+                  <search-number displayName="Gestation Days" entityName="incident" parentEntityName=""
+                    fieldName="caefiss_ati_days"></search-number>
+                </div>
+              </div>
+
+              <hr>
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_ati_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ATI end -->
+      <!-- Medical history Start -->
+      <div class="card">
+        <div class="card-header" id="headingThree">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseThree"
+              aria-expanded="false" aria-controls="collapseThree">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspMedical History </button>
+          </h5>
+        </div>
+        <div id="collapseThree" class="collapse" aria-labelledby="headingThree">
+          <div class="card-body">
+            <!-- Medical History -->
+            <div>
+              <div id="boldText">
+                <caption>Concomitant medication(s)</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-lookup displayName="Concomitant medication(s)"
+                    entityName="caefiss_cd_concomitant_medication_mls" from="caefiss_cd_concomitant_medication_mlid"
+                    parentEntityName="caefiss_aefi_cncmit_medications" to="caefiss_mh_concomitant_medication_name_ml"
+                    fieldName="caefiss_english_value" isMultiSelect="true"></search-lookup>
+                  <!-- Multi select testing -->
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="ATC Code" entityName="caefiss_cd_concomitant_medication_mls"
+                    from="caefiss_cd_concomitant_medication_mlid" parentEntityName="caefiss_aefi_cncmit_medications"
+                    to="caefiss_mh_concomitant_medication_name_ml" fieldName="caefiss_atc_code"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mh_comments_concomitant_med"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div id="boldText">
+                <caption>Known medical conditions</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_conditions" to="caefiss_mdcmeddra_llt_ml"
+                    fieldName="caefiss_llt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_conditions" to="caefiss_mdcmeddra_llt_ml"
+                    fieldName="caefiss_pt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_conditions" to="caefiss_mdcmeddra_llt_ml"
+                    fieldName="caefiss_soc_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mh_comments_known_med_condi"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div id="boldText">
+                <caption>Known allergies</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_known_allergies" to="caefiss_mh_ka_meddra_llt_ml"
+                    fieldName="caefiss_llt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_known_allergies" to="caefiss_mh_ka_meddra_llt_ml"
+                    fieldName="caefiss_pt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_known_allergies" to="caefiss_mh_ka_meddra_llt_ml"
+                    fieldName="caefiss_soc_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mh_comments_known_allergies"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div id="boldText">
+                <caption>Acute illness/injury</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_acute_illness" to="caefiss_mh_acutei_llness_injury_meddra_llt_ml"
+                    fieldName="caefiss_llt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_acute_illness" to="caefiss_mh_acutei_llness_injury_meddra_llt_ml"
+                    fieldName="caefiss_pt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_acute_illness" to="caefiss_mh_acutei_llness_injury_meddra_llt_ml"
+                    fieldName="caefiss_soc_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mh_comments_acute_ill"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div id="boldText">
+                <caption>Prior COVID-19 infection: Test Type</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_test_type" to="caefiss_mhttmeddraml"
+                    fieldName="caefiss_llt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_test_type" to="caefiss_mhttmeddraml"
+                    fieldName="caefiss_pt_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_mdc_test_type" to="caefiss_mhttmeddraml"
+                    fieldName="caefiss_soc_term_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-6">
+                  <search-date displayName="Date" entityName="caefiss_aefi_mdc_test_type"
+                    from="caefiss_mhtt_parent_case" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_date_test_type"></search-date>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mh_prior_infection_test_type_comments"></search-text>
+                </div>
+              </div>
+              <hr>
+              <div id="boldText">
+                <caption>COVID-19 immunization history</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-lookup displayName="Immunization Agent" entityName="caefiss_cd_immunizing_agents_mls"
+                    from="caefiss_cd_immunizing_agents_mlid" parentEntityName="caefiss_aefi_immunization_history"
+                    to="caefiss_aeih_immunization_agent" fieldName="caefiss_english_value"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="Trade Name" entityName="caefiss_cd_immunizing_agents_mls"
+                    from="caefiss_cd_immunizing_agents_mlid" parentEntityName="caefiss_aefi_immunization_history"
+                    to="caefiss_aeih_immunization_agent" fieldName="caefiss_vac_immunizing_agent_trade_name_en"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="Manufacturer" entityName="caefiss_cd_immunizing_agents_mls"
+                    from="caefiss_cd_immunizing_agents_mlid" parentEntityName="caefiss_aefi_immunization_history"
+                    to="caefiss_aeih_immunization_agent" fieldName="caefiss_vac_immunizing_agent_manufactureren"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-3">
+                  <search-text displayName="Lot Number" entityName="caefiss_aefi_immunization_history"
+                    from="caefiss_aeih_parent_case" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_lot_number"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Dose Number" entityName="caefiss_aefi_immunization_history"
+                    from="caefiss_aeih_parent_case" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_aeih_dose"></search-text>
+                </div>
+                <div class="col-sm-6">
+                  <search-date displayName="Date of previous immunization"
+                    entityName="caefiss_aefi_immunization_history" from="caefiss_aeih_parent_case"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_date_pre_immunization"></search-date>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mh_previous_imms_history_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Medical history end-->
+      <!-- Vaccines Start -->
+      <div class="card">
+        <div class="card-header" id="headingFour">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseFour"
+              aria-expanded="false" aria-controls="collapseFour">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspVaccines </button>
+          </h5>
+        </div>
+        <div id="collapseFour" class="collapse" aria-labelledby="headingFour">
+          <div class="card-body">
+            <!-- Vaccines -->
+            <div>
+              <div id="boldText">
+                <caption>Vaccines</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-lookup displayName="Immunizing Agent" entityName="caefiss_cd_immunizing_agents_mls"
+                    from="caefiss_cd_immunizing_agents_mlid" to="caefiss_vac_cd_immunizing_agents_ml"
+                    parentEntityName="caefiss_aefi_vaccines" parentEntityId="caefiss_id"
+                    fieldName="caefiss_english_value" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-4">
+                  <search-lookup displayName="Trade name" entityName="caefiss_cd_immunizing_agents_mls"
+                    from="caefiss_cd_immunizing_agents_mlid" to="caefiss_vac_cd_immunizing_agents_ml"
+                    parentEntityName="caefiss_aefi_vaccines" parentEntityId="caefiss_id"
+                    fieldName="caefiss_vac_immunizing_agent_trade_name_en" isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-4">
+                  <search-lookup displayName="Manufacturer" entityName="caefiss_cd_immunizing_agents_mls"
+                    from="caefiss_cd_immunizing_agents_mlid" to="caefiss_vac_cd_immunizing_agents_ml"
+                    parentEntityName="caefiss_aefi_vaccines" parentEntityId="caefiss_id"
+                    fieldName="caefiss_vac_immunizing_agent_manufactureren" isMultiSelect="true"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-4">
+                  <search-text displayName="Lot Number" entityName="caefiss_aefi_vaccines" from="caefiss_case"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_lot_number"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-option displayName="Dose #" entityName="caefiss_aefi_vaccines" from="caefiss_case"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_vac_dose"></search-option>
+                </div>
+                <div class="col-sm-4">
+                  <search-number displayName="Dosage" entityName="caefiss_aefi_vaccines" from="caefiss_case"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_vac_dosage"></search-number>
+                </div>
+                <br />
+                <div class="col-sm-4">
+                  <search-option displayName="Dosage Unit" entityName="caefiss_aefi_vaccines" from="caefiss_case"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_vac_dose_unit"></search-option>
+                </div>
+                <div class="col-sm-4">
+                  <search-option displayName="Route" entityName="caefiss_aefi_vaccines" from="caefiss_case"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_vac_route"></search-option>
+                </div>
+                <div class="col-sm-4">
+                  <search-option displayName="Site" entityName="caefiss_aefi_vaccines" from="caefiss_case"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_vac_site"></search-option>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_vac_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Vaccines end -->
+      <!-- Immunization error start -->
+      <div class="card">
+        <div class="card-header" id="headingFive">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseFive"
+              aria-expanded="false" aria-controls="collapseFive">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspImmunization errors </button>
+          </h5>
+        </div>
+        <div id="collapseFive" class="collapse" aria-labelledby="headingFive">
+          <div class="card-body">
+            <!-- Immunization Error -->
+            <div>
+              <div class="row">
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_ie_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Immunization error end -->
+      <!-- Previous AEFI Start -->
+      <div class="card">
+        <div class="card-header" id="headingSix">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseSix"
+              aria-expanded="false" aria-controls="collapseSix">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspPrevious AEFI </button>
+          </h5>
+        </div>
+        <div id="collapseSix" class="collapse" aria-labelledby="headingSix">
+          <div class="card-body">
+            <!-- Previous AEFI -->
+            <div>
+              <div class="row">
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_pa_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Previous AEFI end -->
+      <!-- AEFI impact Start -->
+      <div class="card">
+        <div class="card-header" id="headingSeven">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseSeven"
+              aria-expanded="false" aria-controls="collapseSeven">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspAEFI impact, outcome, care obtained </button>
+          </h5>
+        </div>
+        <div id="collapseSeven" class="collapse" aria-labelledby="headingSeven">
+          <div class="card-body">
+            <!-- AEFI Impact -->
+            <div>
+              <div id="boldText">
+                <caption>If required hospitalization</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-date displayName="Date of admission" entityName="caefiss_aefi_hospitalization"
+                    from="caefiss_hloco_hospitalization_parent_case" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_date_admission"></search-date>
+                </div>
+                <div class="col-sm-6">
+                  <search-date displayName="Date of discharge" entityName="caefiss_aefi_hospitalization"
+                    from="caefiss_hloco_hospitalization_parent_case" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_date_discharge"></search-date>
+                </div>
+                <br />
+                <div class="col-sm-6">
+                  <search-number displayName="Days" entityName="caefiss_aefi_hospitalization"
+                    from="caefiss_hloco_hospitalization_parent_case" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_days"></search-number>
+                </div>
+                <div class="col-sm-6">
+                  <search-text displayName="Event" entityName="caefiss_aefi_hospitalization"
+                    from="caefiss_hloco_hospitalization_parent_case" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_event"></search-text>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_ioc_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- AEFI impact end -->
+      <!-- Treatments Start -->
+      <div class="card">
+        <div class="card-header" id="headingEight">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseEight"
+              aria-expanded="false" aria-controls="collapseEight">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspTreatments </button>
+          </h5>
+        </div>
+        <div id="collapseEight" class="collapse" aria-labelledby="headingEight">
+          <div class="card-body">
+            <!-- treatments -->
+
+            <div class="row">
+              <div class="col-sm-6">
+                <search-option displayName="Treatment received" entityName="incident" parentEntityName=""
+                  fieldName="caefiss_tm_treatment_received"></search-option>
+              </div>
+            </div>
+
+
+            <div>
+              <div id="boldText">
+                <caption>Drug infromation</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-lookup displayName="Drug information" entityName="caefiss_cd_concomitant_medication_mls"
+                    from="caefiss_cd_concomitant_medication_mlid" parentEntityName="caefiss_aefi_drugs"
+                    to="caefiss_tr_drug_information_ml" fieldName="caefiss_english_value"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="ATC Code" entityName="caefiss_cd_concomitant_medication_mls"
+                    from="caefiss_cd_concomitant_medication_mlid" parentEntityName="caefiss_aefi_drugs"
+                    to="caefiss_tr_drug_information_ml" fieldName="caefiss_atc_code"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_tm_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Treatment end -->
+      <!-- Investigations Start -->
+      <div class="card">
+        <div class="card-header" id="headingNine">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseNine"
+              aria-expanded="false" aria-controls="collapseNine">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspInvestigations </button>
+          </h5>
+        </div>
+        <div id="collapseNine" class="collapse" aria-labelledby="headingNine">
+          <div class="card-body">
+            <!-- investigations -->
+            <div>
+              <div id="boldText">
+                <caption>Investigations MedDRA</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_investigations_meddra" to="caefiss_in_meddra_llt_ml"
+                    fieldName="caefiss_llt_term_en"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_investigations_meddra" to="caefiss_in_meddra_llt_ml"
+                    fieldName="caefiss_pt_term_en"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_investigations_meddra" to="caefiss_in_meddra_llt_ml"
+                    fieldName="caefiss_soc_term_en"></search-lookup>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_invst_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Investigations end -->
+      <!-- Reporter information Start -->
+      <div class="card">
+        <div class="card-header" id="headingTen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTen"
+              aria-expanded="false" aria-controls="collapseTen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspReporter information </button>
+          </h5>
+        </div>
+        <div id="collapseTen" class="collapse" aria-labelledby="headingTen">
+          <div class="card-body">
+            <!-- investigations -->
+            <div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-text displayName="Name" entityName="incident" fieldName="caefiss_ri_name"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Phone (###)###-####" entityName="incident"
+                    fieldName="caefiss_ri_phone"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Fax (###)###-####" entityName="incident"
+                    fieldName="caefiss_ri_fax"></search-text>
+                </div>
+                <br />
+                <div class="col-sm-4">
+                  <search-text displayName="Institution" entityName="incident"
+                    fieldName="caefiss_ri_institution"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Address" entityName="incident" fieldName="caefiss_ri_address"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="City" entityName="incident" fieldName="caefiss_ri_city"></search-text>
+                </div>
+                <br />
+                <div class="col-sm-3">
+                  <search-text displayName="Province" entityName="incident"
+                    fieldName="caefiss_ri_reporting_jurisdiction"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Postal code" entityName="incident"
+                    fieldName="caefiss_ri_postal_code"></search-text>
+                </div>
+                <div class="col-sm-6">
+                  <search-date displayName="Date reported (YYYY-MM-DD)" entityName="incident"
+                    fieldName="caefiss_ri_date_reported"></search-date>
+                </div>
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_ri_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Reporter Information end -->
+      <!-- AEFI Start -->
+      <div class="card">
+        <div class="card-header" id="headingEleven">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseEleven"
+              aria-expanded="false" aria-controls="collapseEleven">
+              <i class="fas fa-chevron-up"></i>&nbsp;&nbsp;AEFI </button>
+          </h5>
+        </div>
+        <div id="collapseEleven" class="collapse" aria-labelledby="headingEleven">
+          <div class="card-body">
+
+            <div class="card">
+              <div class="card-header" id="AEFINestedOne">
+                <h5 class="mb-0">
+                  <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
+                    data-target="#collapseAEFINestedOne" aria-expanded="false" aria-controls="collapseAEFINestedOne">
+                    <i class="fas fa-chevron-up"></i> Local reaction </button>
+                </h5>
+              </div>
+              <div id="collapseAEFINestedOne" class="collapse" aria-labelledby="AEFINestedOne">
+                <div class="card-body"> Local reaction Content </div>
+              </div>
+            </div>
+
+
+            <div class="card">
+              <div class="card-header" id="AEFINestedTwo">
+                <h5 class="mb-0">
+                  <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
+                    data-target="#collapseAEFINestedTwo" aria-expanded="false" aria-controls="collapseAEFINestedTwo">
+                    <i class="fas fa-chevron-up"></i> Allergic and Allergic-like events </button>
+                </h5>
+              </div>
+              <div id="collapseAEFINestedTwo" class="collapse" aria-labelledby="AEFINestedTwo">
+                <div class="card-body"> Allergic and Allergic-like events Content </div>
+              </div>
+            </div>
+
+
+
+
+            <div class="card">
+              <div class="card-header" id="AEFINestedThree">
+                <h5 class="mb-0">
+                  <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
+                    data-target="#collapseAEFINestedThree" aria-expanded="false"
+                    aria-controls="collapseAEFINestedThree">
+                    <i class="fas fa-chevron-up"></i> Neurologic events </button>
+                </h5>
+              </div>
+              <div id="collapseAEFINestedThree" class="collapse" aria-labelledby="AEFINestedThree">
+                <div class="card-body"> Neurologic events Content </div>
+              </div>
+            </div>
+
+
+            <div class="card">
+              <div class="card-header" id="AEFINestedFour">
+                <h5 class="mb-0">
+                  <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
+                    data-target="#collapseAEFINestedFour" aria-expanded="false" aria-controls="collapseAEFINestedFour">
+                    <i class="fas fa-chevron-up"></i> Other events </button>
+                </h5>
+              </div>
+              <div id="collapseAEFINestedFour" class="collapse" aria-labelledby="AEFINestedFour">
+                <div class="card-body"> Other events Content </div>
+              </div>
+            </div>
+
+
+            <div class="card">
+              <div class="card-header" id="AEFINestedFive">
+                <h5 class="mb-0">
+                  <button class="btn btn-link collapsed" type="button" data-toggle="collapse"
+                    data-target="#collapseAEFINestedFive" aria-expanded="false" aria-controls="collapseAEFINestedFive">
+                    <i class="fas fa-chevron-up"></i> COVID-19 Adverse Events of Special Interest (AESI)
+                    - for reporting following COVID-19 vaccine only </button>
+                </h5>
+              </div>
+              <div id="collapseAEFINestedFive" class="collapse" aria-labelledby="AEFINestedFive">
+                <div class="card-body"> Content </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- AEFI  End -->
+      <!-- Supplementary Info Start -->
+      <div class="card">
+        <div class="card-header" id="headingTwelve">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwelve"
+              aria-expanded="false" aria-controls="collapseTwelve">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspSupplementary information </button>
+          </h5>
+        </div>
+        <div id="collapseTwelve" class="collapse" aria-labelledby="headingTwelve">
+          <div class="card-body">
+            <!-- investigations -->
+            <div>
+              <div class="row">
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_si_comments_rt"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Summplementary Info End -->
+      <!-- MedDRA Start -->
+      <div class="card">
+        <div class="card-header" id="headingThirteen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseThirteen"
+              aria-expanded="false" aria-controls="collapseThirteen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspMedDRA </button>
+          </h5>
+        </div>
+        <div id="collapseThirteen" class="collapse" aria-labelledby="headingThirteen">
+          <div class="card-body">
+            <div>
+              <div id="boldText">
+                <caption>Medra</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Verbatim" entityName="caefiss_aefi_meddras"
+                    from="caefiss_case_to_aefi_meddra" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_verbatim"></search-text>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_meddras" to="caefiss_meddra_llt_ml" fieldName="caefiss_llt_term_en"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_meddras" to="caefiss_meddra_llt_ml" fieldName="caefiss_pt_term_en"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+                <div class="col-sm-3">
+                  <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                    parentEntityName="caefiss_aefi_meddras" to="caefiss_meddra_llt_ml" fieldName="caefiss_soc_term_en"
+                    isMultiSelect="true"></search-lookup>
+                </div>
+              </div>
+              <hr />
+              <div id="boldText">
+                <caption>Time interval</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-text displayName="Mins" entityName="caefiss_aefi_meddras" from="caefiss_case_to_aefi_meddra"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_ti_mins"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Hours" entityName="caefiss_aefi_meddras" from="caefiss_case_to_aefi_meddra"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_ti_hours"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Days" entityName="caefiss_aefi_meddras" from="caefiss_case_to_aefi_meddra"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_ti_days"></search-text>
+                </div>
+              </div>
+              <br />
+              <div id="boldText">
+                <caption>Duration</caption>
+              </div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Mins" entityName="caefiss_aefi_meddras" from="caefiss_case_to_aefi_meddra"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_dur_mins"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Hours" entityName="caefiss_aefi_meddras" from="caefiss_case_to_aefi_meddra"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_dur_hours"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Days" entityName="caefiss_aefi_meddras" from="caefiss_case_to_aefi_meddra"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_dur_days"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="D(NYR)" entityName="caefiss_aefi_meddras" from="caefiss_case_to_aefi_meddra"
+                    parentEntityName="incident" to="incidentid" fieldName="caefiss_dur_nyr"></search-text>
+                </div>
+
+                <br />
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mdra_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- MedDRA  End -->
+      <!-- Recommendation Start -->
+      <div class="card">
+        <div class="card-header" id="headingFourteen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseFourteen"
+              aria-expanded="false" aria-controls="collapseFourteen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspRecommendations </button>
+          </h5>
+        </div>
+        <div id="collapseFourteen" class="collapse" aria-labelledby="headingFourteen">
+          <div class="card-body">
+            <div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-text displayName="No further immunizations with" entityName="incident"
+                    fieldName="caefiss_rec_no_further_immun_specify"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Expert referral" entityName="incident"
+                    fieldName="caefiss_rec_expert_referral_specify"></search-text>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Other" entityName="incident"
+                    fieldName="caefiss_rec_other_specify"></search-text>
+                </div>
+                <br />
+                <div class="col-sm-4">
+                  <search-text displayName="Name" entityName="incident" fieldName="caefiss_rec_name"></search-text>
+                </div>
+
+              </div>
+
+              <div class="row">
+
+                <div class="col-sm-4">
+                  <search-text displayName="Phone(###)###-####x#####" entityName="incident"
+                    fieldName="caefiss_rec_phone"></search-text>
+                </div>
+                <div class="col-sm-6">
+                  <search-date displayName="Date (YYYY-MM-DD)" entityName="incident"
+                    fieldName="caefiss_rec_date"></search-date>
+                </div>
+
+              </div>
+
+
+              <div class="row">
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_rec_comments"></search-text>
+                </div>
+              </div>
+
+
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Recommendation  End -->
+      <!-- Follow up Start -->
+      <div class="card">
+        <div class="card-header" id="headingFifteen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseFifteen"
+              aria-expanded="false" aria-controls="collapseFifteen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspFollow up </button>
+          </h5>
+        </div>
+        <div id="collapseFifteen" class="collapse" aria-labelledby="headingFifteen">
+          <div class="card-body">
+            <div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-checkbox displayName="Vaccine administered without AEFI" entityName="incident"
+                    fieldName="caefiss_fol_vaccine_administered_without_aefi"></search-checkbox>
+                </div>
+                <div class="col-sm-3">
+                  <search-checkbox displayName="Vaccine administered with recurrence of AEFI" entityName="incident"
+                    fieldName="caefiss_fol_vac_admin_with_recurrence_of_aefi"></search-checkbox>
+                </div>
+                <div class="col-sm-3">
+                  <search-checkbox displayName="Vaccine administered, other AEFI observed" entityName="incident"
+                    fieldName="caefiss_fol_vac_admin_other_aefi_observed"></search-checkbox>
+                </div>
+
+
+              </div>
+
+              <br />
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-checkbox displayName="Vaccine administered without information on AEFI" entityName="incident"
+                    fieldName="caefiss_fol_vac_admin_without_information_on_aefi"></search-checkbox>
+                </div>
+                <div class="col-sm-3">
+                  <search-checkbox displayName="Vaccine not administered" entityName="incident"
+                    fieldName="caefiss_fol_vaccine_not_administered"></search-checkbox>
+                </div>
+
+              </div>
+
+              <div class="row">
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_fol_comments"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- follow up  End -->
+      <!-- ACCA Start -->
+      <div class="card">
+        <div class="card-header" id="headingSixteen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseSixteen"
+              aria-expanded="false" aria-controls="collapseSixteen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspACCA </button>
+          </h5>
+        </div>
+        <div id="collapseSixteen" class="collapse" aria-labelledby="headingSixteen">
+          <div class="card-body">
+
+            <div class="row">
+              <div class="col-sm-6">
+                <search-text displayName="ACCA number" entityName="caefiss_aefi_acca" from="caefiss_for_case"
+                  parentEntityName="incident" to="incidentid" fieldName="caefiss_acca_number"></search-text>
+              </div>
+              <div class="col-sm-6">
+                <search-date displayName="ACCA review #1(YYYY-MM-DD)" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_review1"></search-date>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-sm-6">
+                <search-date displayName="ACCA review #2(YYYY-MM-DD)" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_review2"></search-date>
+              </div>
+              <div class="col-sm-6">
+                <search-date displayName="ACCA review #3(YYYY-MM-DD)" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_review3"></search-date>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-sm-6">
+                <search-option displayName="Primary reason for reporting" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_prim_reason_report"></search-option>
+              </div>
+              <div class="col-sm-6">
+                <search-option displayName="ACCA focus for assessment" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_focus_assessment"></search-option>
+              </div>
+            </div>
+
+            <div class="row">
+
+              <div class="col-sm-6">
+                <search-option displayName="Action" entityName="caefiss_aefi_acca" from="caefiss_for_case"
+                  parentEntityName="incident" to="incidentid" fieldName="caefiss_acca_action"></search-option>
+              </div>
+
+            </div>
+
+            <br />
+            <div class="well">
+              THIS EVENT(s)
+            </div>
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.1 Frequency of occurence of the Event(s)" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_1_frequency_occurence_of_the_event"></search-option>
+              </div>
+            </div>
+            <br />
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.2 Similar event(s) known to occur with other disease(s)"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_2_similar_event_known_to_occur"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.3a Event(s) known to be related to the act of vaccination"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_3a_event_relat_act_of_vac"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.3b Causal association b/w event(s) and vaccine"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_3b_causal_association"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.3c Strongest evidence re causal association"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_3c_strongest_evidence"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.4 Event(s) biologically plausible for given vaccine(s)"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_4_events_biologically_plausible"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.5 Immunization-event interval compatibility"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_5_immu_event_inter"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.6 Patient had similar event(s) +/or symptoms in past"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_6_patient_similar_event"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.7 Concomitant/preceding drug therapy" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_7_concom_prec_dr_thera"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.8 Concomitant or prior condition (if yes, is it related to this event?)"
+                  entityName="caefiss_aefi_acca" from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_8_concom_pri_condition"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="2.9 Other contributing factors" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_2_9_oth_contri_fact"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+            <div class="well">
+              Follow-up
+            </div>
+            <br />
+
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="3.1 Causality association is" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_3_1_causality_association_is"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+            <div class="row">
+              <div class="col-sm-8">
+                <search-option displayName="3.2 Possible new entity" entityName="caefiss_aefi_acca"
+                  from="caefiss_for_case" parentEntityName="incident" to="incidentid"
+                  fieldName="caefiss_acca_3_2_possible_new_entity"></search-option>
+              </div>
+            </div>
+            <br />
+
+
+            <div class="row">
+              <div class="col-sm-12">
+                <search-text displayName="Comments" entityName="caefiss_aefi_acca" from="caefiss_for_case"
+                  parentEntityName="incident" to="incidentid" fieldName="caefiss_acca_comments"></search-text>
+              </div>
+            </div>
+            <br />
+
+
+
+
+
+
+
+
+
+          </div>
+
+
+        </div>
+
+
+      </div>
+
+
+      <!-- ACCA  End -->
+
+
+      <!-- Comment information start-->
+      <div class="card">
+        <div class="card-header" id="headingSeventeen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseSeventeen"
+              aria-expanded="false" aria-controls="collapseSeventeen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspComment information </button>
+          </h5>
+        </div>
+        <div id="collapseSeventeen" class="collapse" aria-labelledby="headingSeventeen">
+          <div class="card-body">
+            <div>
+              <div class="row">
+                <br />
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_com_comment"></search-text>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Comment information  End -->
+
+
+
+      <!-- Case Management information start-->
+      <div class="card">
+        <div class="card-header" id="headingEighteen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseEighteen"
+              aria-expanded="false" aria-controls="collapseEighteen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspCase Management </button>
+          </h5>
+        </div>
+        <div id="collapseEighteen" class="collapse" aria-labelledby="headingEighteen">
+          <div class="card-body">
+            <div>
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-option displayName="Completed status" entityName="incident"
+                    fieldName="caefiss_qa_completed_status"></search-option>
+                </div>
+              </div>
+
+              <br />
+
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_com_comment"></search-text>
+                </div>
+              </div>
+
+              <br />
+
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-checkbox displayName="MCR required (Initial report)" entityName="incident"
+                    fieldName="caefiss_qa_impact_to_medical_case"></search-checkbox>
+                </div>
+              </div>
+
+              <br />
+
+
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-option displayName="Duplicate" entityName="incident"
+                    fieldName="caefiss_qa_duplicate"></search-option>
+                </div>
+              </div>
+
+              <br />
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_qa_duplicate_comments"></search-text>
+                </div>
+              </div>
+
+
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-checkbox displayName="Upload error" entityName="incident"
+                    fieldName="caefiss_qa_upload_error"></search-checkbox>
+                </div>
+              </div>
+              <br />
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_qa_required_comments"></search-text>
+                </div>
+              </div>
+
+              <br />
+
+
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-checkbox displayName="UMC withheld" entityName="incident"
+                    fieldName="caefiss_qa_umc_withheld"></search-checkbox>
+                </div>
+              </div>
+
+
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-option displayName="P/T case deletion" entityName="incident"
+                    fieldName="caefiss_qa_pt_case_deletion"></search-option>
+                </div>
+                <div class="col-sm-6">
+                  <search-date displayName="Date case delete" entityName="incident"
+                    fieldName="caefiss_qa_datecasedeleted"></search-date>
+                </div>
+
+              </div>
+              <br /> <br />
+
+              <div id="boldText">
+                <caption>Follow up with report jurisdiction</caption>
+              </div>
+
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Username" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_username"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Role" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_role"></search-text>
+                </div>
+                <div class="col-sm-6">
+                  <search-date displayName="QA Date" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_qa_date"></search-date>
+                </div>
+
+
+              </div>
+              <br />
+
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-option displayName="Tab name" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_tab_name"></search-option>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Issue field" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_field_other_specify"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-option displayName="QA issues" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_qaissues"></search-option>
+                </div>
+                <div class="col-sm-3">
+                  <search-option displayName="Status" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_status"></search-option>
+                </div>
+
+
+              </div>
+              <br />
+
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Comments" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="description"></search-text>
+                </div>
+
+                <div class="col-sm-6">
+                  <search-date displayName="Date QA resolved" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_dateqaresolved"></search-date>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-text displayName="Resolved by" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_qaresolvedby"></search-text>
+                </div>
+
+
+              </div>
+              <br />
+
+              <div class="row">
+                <div class="col-sm-4">
+                  <search-checkbox displayName="MCR required" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_mcrrequired"></search-checkbox>
+                </div>
+
+                <div class="col-sm-4">
+                  <search-option displayName="MCR completed" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_mcrcompleted"></search-option>
+                </div>
+
+                <div class="col-sm-4">
+                  <search-text displayName="MCR completed by" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_mcr_completed_by_username"></search-text>
+                </div>
+
+                <br />
+
+                <div class="col-sm-6">
+                  <search-date displayName="Date MCR completed" entityName="caefiss_aefi_reporter_follow_up_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_rfu_datemcrcompleted"></search-date>
+                </div>
+
+
+              </div>
+
+              <br />
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_cmfollowupcomments"></search-text>
+                </div>
+
+              </div>
+              <br />
+              <br />
+              <div id="boldText">
+                <caption>Case issues and resolution</caption>
+              </div>
+
+              <div class="row">
+
+                <div class="col-sm-3">
+                  <search-text displayName="Username" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_username"></search-text>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-text displayName="Role" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_role"></search-text>
+                </div>
+
+                <div class="col-sm-6">
+                  <search-date displayName="QA Date" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_qa_date"></search-date>
+                </div>
+
+
+              </div>
+              <br />
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-option displayName="Tab name" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_ir_tab_name"></search-option>
+                </div>
+                <div class="col-sm-3">
+                  <search-text displayName="Issue field" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_ir_field_name_specify"></search-text>
+                </div>
+                <div class="col-sm-3">
+                  <search-option displayName="Case issues" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_cm_ir_qa_issue_classification"></search-option>
+                </div>
+                <div class="col-sm-3">
+                  <search-option displayName="Status" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_status"></search-option>
+                </div>
+
+
+              </div>
+              <br />
+
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="Comments" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="description"></search-text>
+                </div>
+
+                <div class="col-sm-6">
+                  <search-date displayName="Date QA resolved" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_date_qa_resolved"></search-date>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-text displayName="Resolved by" entityName="caefiss_aefi_issue_resolution_activity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_qa_resolved_by"></search-text>
+                </div>
+
+
+              </div>
+              <br />
+
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_mcr_qa_comments"></search-text>
+                </div>
+
+              </div>
+
+              <br />
+              <br />
+
+
+              <div id="boldText">
+                <caption>Case update</caption>
+              </div>
+
+
+              <div class="row">
+
+                <div class="col-sm-3">
+                  <search-option displayName="Case update status" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_caseupdatestatus"></search-option>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-checkbox displayName="Data entry completed" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_dataentrycompleted"></search-checkbox>
+                </div>
+
+                <div class="col-sm-6">
+                  <search-date displayName="Date update received" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_dateupdatereceived"></search-date>
+                </div>
+
+
+
+              </div>
+              <br />
+
+              <div class="row">
+
+                <div class="col-sm-6">
+                  <search-date displayName="Date update completed" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_dateupdatecompleted"></search-date>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-text displayName="Update completed by" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_update_completed_by_username"></search-text>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-checkbox displayName="MC required" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_mcrequired"></search-checkbox>
+                </div>
+
+
+              </div>
+              <br />
+
+              <div class="row">
+
+                <div class="col-sm-3">
+                  <search-checkbox displayName="MC completed" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_mccompleted"></search-checkbox>
+                </div>
+
+                <div class="col-sm-6">
+                  <search-date displayName="Date MC completed" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_dmccompleted"></search-date>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-text displayName="MC completed by" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_mc_completed_by_username"></search-text>
+                </div>
+
+
+              </div>
+              <br />
+              <div class="row">
+
+                <div class="col-sm-3">
+                  <search-checkbox displayName="MCR required" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_mcrrequired"></search-checkbox>
+                </div>
+
+                <div class="col-sm-3">
+                  <search-checkbox displayName="MCR completed" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_mcrcompleted"></search-checkbox>
+                </div>
+
+                <div class="col-sm-6">
+                  <search-date displayName="Date MCR completed" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_datemcrcompleted"></search-date>
+                </div>
+
+              </div>
+              <br />
+
+              <div class="row">
+                <div class="col-sm-3">
+                  <search-text displayName="MCR completed by" entityName="caefiss_caseupdateactivity"
+                    from="regardingobjectid" parentEntityName="incident" to="incidentid"
+                    fieldName="caefiss_mcr_completed_by_username"></search-text>
+                </div>
+
+              </div>
+
+              <br />
+
+              <div class="row">
+                <div class="col-sm-12">
+                  <search-text displayName="Comments" entityName="incident"
+                    fieldName="caefiss_cmcaseupdatecomments"></search-text>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Case management End -->
+
+
+
+      <!-- Audit Trail start-->
+      <div class="card">
+        <div class="card-header" id="headingNineteen">
+          <h5 class="mb-0">
+            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseNineteen"
+              aria-expanded="false" aria-controls="collapseNineteen">
+              <i class="fas fa-chevron-up"></i>&nbsp&nbspAudit trail </button>
+          </h5>
+        </div>
+        <div id="collapseNineteen" class="collapse" aria-labelledby="headingNineteen">
+          <div class="card-body">
+            <div>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-date displayName="Report enter date" entityName="incident"
+                    fieldName="caefiss_date_created"></search-date>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Who created" entityName="incident"
+                    fieldName="caefiss_user_created"></search-text>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-6">
+                  <search-date displayName="Date report completed" entityName="incident"
+                    fieldName="caefiss_date_report_completed"></search-date>
+                </div>
+                <div class="col-sm-4">
+                  <search-text displayName="Who completed" entityName="incident"
+                    fieldName="caefiss_who_completed"></search-text>
+                </div>
+
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Audit trail End -->
+
+
+
+    <!-- MCR start-->
+    <div class="card">
+      <div class="card-header" id="headingTwenty">
+        <h5 class="mb-0">
+          <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwenty"
+            aria-expanded="false" aria-controls="collapseTwenty">
+            <i class="fas fa-chevron-up"></i>&nbsp&nbspMCR </button>
+        </h5>
+      </div>
+      <div id="collapseTwenty" class="collapse" aria-labelledby="headingTwenty">
+        <div class="card-body">
+          <div id="boldText">
+            <caption>Primary review</caption>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-3">
+              <search-text displayName="Reviewed by" entityName="incident"
+                fieldName="caefiss_mcr_first_reviewer1_legacy"></search-text>
+            </div>
+
+            <div class="col-sm-6">
+              <search-date displayName="Review date" entityName="incident"
+                fieldName="caefiss_mcr_first_review1_date"></search-date>
+            </div>
+
+            <div class="col-sm-3">
+              <search-option displayName="Primary review action" entityName="incident"
+                fieldName="caefiss_mcr_review_action1"></search-option>
+            </div>
+            <br />
+
+            <div class="col-sm-12">
+              <search-text displayName="Primary review action comments" entityName="incident"
+                fieldName="caefiss_mcr_action1_comments"></search-text>
+            </div>
+          </div>
+
+          <div class="row">
+
+            <div class="col-sm-4">
+              <search-option displayName="Primary AEFI category" entityName="incident"
+                fieldName="caefiss_mcr_primary_category"></search-option>
+            </div>
+
+            <div class="col-sm-6">
+              <search-option displayName="Primary AEFI sub-category" entityName="incident"
+                fieldName="caefiss_mcr_primary_sub_category"></search-option>
+            </div>
+
+
+          </div>
+          <br />
+          <div class="row">
+
+            <div class="col-sm-6">
+              <search-option displayName="Fever" entityName="incident" fieldName="caefiss_mcr_fever"></search-option>
+            </div>
+
+
+          </div>
+          <br />
+
+          <div class="row">
+
+            <div class="col-sm-3">
+              <search-text displayName="Primary onset" entityName="incident"
+                fieldName="caefiss_mcr_primary_onset"></search-text>
+            </div>
+
+            <div class="col-sm-3">
+              <search-option displayName="Primary onset unit" entityName="incident"
+                fieldName="caefiss_mcr_onset_unit"></search-option>
+            </div>
+
+            <div class="col-sm-3">
+              <search-text displayName="Primary duration" entityName="incident"
+                fieldName="caefiss_mcr_primary_duration"></search-text>
+            </div>
+
+
+            <div class="col-sm-3">
+              <search-option displayName="Primary duration unit" entityName="incident"
+                fieldName="caefiss_mcr_duration_unit"></search-option>
+            </div>
+
+
+          </div>
+
+          <br />
+          <div id="boldText">
+            <caption>Primary AEFI MedDRA</caption>
+          </div>
+          <div class="row">
+            <div class="col-sm-3">
+              <search-text displayName="Verbatim" entityName="caefiss_medicalassessmentofreportedaefis"
+                from="caefiss_case" parentEntityName="incident" to="incidentid"
+                fieldName="caefiss_verbatimmaaefi"></search-text>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-3">
+              <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                parentEntityName="caefiss_medicalassessmentofreportedaefis" to="caefiss_llt_maaefi"
+                fieldName="caefiss_llt_term_en" isMultiSelect="true"></search-lookup>
+            </div>
+            <div class="col-sm-3">
+              <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                parentEntityName="caefiss_medicalassessmentofreportedaefis" to="caefiss_llt_maaefi"
+                fieldName="caefiss_pt_term_en" isMultiSelect="true"></search-lookup>
+            </div>
+            <div class="col-sm-3">
+              <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                parentEntityName="caefiss_medicalassessmentofreportedaefis" to="caefiss_llt_maaefi"
+                fieldName="caefiss_soc_term_en" isMultiSelect="true"></search-lookup>
+            </div>
+
+
+          </div>
+
+          <br /> <br />
+
+          <div id="boldText">
+            <caption>Host MedDRA</caption>
+          </div>
+          <div class="row">
+            <div class="col-sm-3">
+              <search-text displayName="Verbatim" entityName="caefiss_aefi_primary_host_meddra"
+                from="caefiss_mcr_aefi_primary_host_meddra_parent_case" parentEntityName="incident" to="incidentid"
+                fieldName="caefiss_verbatim"></search-text>
+            </div>
+            <div class="col-sm-3">
+              <search-option displayName="Relevant" entityName="caefiss_aefi_primary_host_meddra"
+                from="caefiss_mcr_aefi_primary_host_meddra_parent_case" parentEntityName="incident" to="incidentid"
+                fieldName="caefiss_mcr_primary_host_relevant"></search-option>
+            </div>
+
+
+          </div>
+
+          <div class="row">
+            <div class="col-sm-3">
+              <search-lookup displayName="LLT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                parentEntityName="caefiss_aefi_primary_host_meddra" to="caefiss_mcr_aefi_primary_host_meddra_llt"
+                fieldName="caefiss_llt_term_en" isMultiSelect="true"></search-lookup>
+            </div>
+            <div class="col-sm-3">
+              <search-lookup displayName="PT" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                parentEntityName="caefiss_aefi_primary_host_meddra" to="caefiss_mcr_aefi_primary_host_meddra_llt"
+                fieldName="caefiss_pt_term_en" isMultiSelect="true"></search-lookup>
+            </div>
+            <div class="col-sm-3">
+              <search-lookup displayName="SOC" entityName="caefiss_cd_meddra_mls" from="caefiss_cd_meddra_mlid"
+                parentEntityName="caefiss_aefi_primary_host_meddra" to="caefiss_mcr_aefi_primary_host_meddra_llt"
+                fieldName="caefiss_soc_term_en" isMultiSelect="true"></search-lookup>
+            </div>
+
+
+          </div>
+
+          <br />
+
+          <div class="row">
+            <div class="col-sm-4">
+              <search-option displayName="Level of severity" entityName="incident"
+                fieldName="caefiss_mcr_severity"></search-option>
+            </div>
+
+            <div class="col-sm-4">
+              <search-option displayName="Reason - why serious" entityName="incident"
+                fieldName="caefiss_mcr_severity_serious"></search-option>
+            </div>
+
+            <div class="col-sm-4">
+              <search-text displayName="If Other, specify" entityName="incident"
+                fieldName="caefiss_mcr_severity_s_other_specify"></search-text>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-4">
+              <search-option displayName="Reason - why high" entityName="incident"
+                fieldName="caefiss_mcr_severity_high"></search-option>
+            </div>
+            <div class="col-sm-4">
+              <search-text displayName="If Other, specify" entityName="incident"
+                fieldName="caefiss_mcr_severity_h_other_specify"></search-text>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-4">
+              <search-option displayName="Reason - why moderate" entityName="incident"
+                fieldName="caefiss_mcr_severity_moderate"></search-option>
+            </div>
+            <div class="col-sm-4">
+              <search-text displayName="If Other, specify" entityName="incident"
+                fieldName="caefiss_mcr_severity_m_other_specify"></search-text>
+            </div>
+
+          </div>
+
+
+
+          <div class="row">
+
+
+            <div class="col-sm-4">
+              <search-option displayName="Reason - why low" entityName="incident"
+                fieldName="caefiss_mcr_severity_low"></search-option>
+            </div>
+
+            <div class="col-sm-4">
+              <search-text displayName="If Other, specify" entityName="incident"
+                fieldName="caefiss_mcr_severity_l_other_specify"></search-text>
+            </div>
+
+
+
+          </div>
+
+
+
+          <div class="row">
+
+            <div class="col-sm-4">
+              <search-option displayName="Primary AEFI resolution" entityName="incident"
+                fieldName="caefiss_mcr_primary_resolution"></search-option>
+            </div>
+
+          </div>
+
+
+          <div class="row">
+            <!-- investigate -->
+            <div class="col-sm-12">
+              <search-text displayName="Comments" entityName="incident"
+                fieldName="caefiss_mcr_primary_resolution"></search-text>
+            </div>
+
+          </div>
+
+          <br /> <br />
+          <div id="boldText">
+            <caption>Secondary review</caption>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-3">
+              <search-text displayName="Reviewed by" entityName="incident"
+                fieldName="caefiss_mcr_first_reviewer2_legacy"></search-text>
+            </div>
+            <div class="col-sm-6">
+              <search-date displayName="Review date(YYYY-MM-DD)" entityName="incident"
+                fieldName="caefiss_mcr_first_review2_date"></search-date>
+            </div>
+            <div class="col-sm-3">
+              <search-option displayName="Secondary review action" entityName="incident"
+                fieldName="caefiss_mcr_review_action2"></search-option>
+            </div>
+
+
+
+          </div>
+
+          <div class="row">
+
+
+          </div>
+
+
+
+
+
+        </div>
+      </div>
+    </div>
+    <!-- MCR End -->
+
+  </div>
+  <!-- Accordion End -->
+
+  <hr />
+
+  <div class="sticky-top">
+    <div class="row">
+      <div class="col-sm-4"></div>
+      <div class="col-sm-4">
+        <button onclick="fb.search();" class="btn btn-info">Search</button>
+        <button onclick="fb.report();" class="btn btn-info">Report</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
