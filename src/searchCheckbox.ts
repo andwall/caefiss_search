@@ -11,6 +11,9 @@ import { CAEFISS } from "./utilities";
 export class CheckboxSearch extends LitElement {
   
   @property()
+  groupId: string = '-1';
+
+  @property()
   entityName: string = '';
 
   @property()
@@ -32,7 +35,7 @@ export class CheckboxSearch extends LitElement {
   alias: string = '';
 
   @property()
-  include: boolean = false;
+  include: boolean | string = false;
   
   @query('#include-checkbox')
   private includeCheckbox?: HTMLInputElement;
@@ -215,7 +218,9 @@ export class CheckboxSearch extends LitElement {
   */
  override connectedCallback(): void {
     super.connectedCallback();
-    this._getData();
+    this._getData(); 
+    this.include= String(this.include).toLowerCase() === 'true';
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
   }
   
   override disconnectedCallback(): void {
@@ -223,7 +228,6 @@ export class CheckboxSearch extends LitElement {
   }
   
   protected override firstUpdated(): void {
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
   }
@@ -265,6 +269,7 @@ export class CheckboxSearch extends LitElement {
   _dispatchMyEvent(): void {
     this._setOperation();
     let evt: SearchEvent = {
+      groupId: this.groupId,
       type: SearchTypes.Checkbox,
       entityName: this.entityName,
       from: this.from,

@@ -9,7 +9,10 @@ import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./Se
 */
 @customElement('search-text')
 export class TextSearch extends LitElement {
- 
+  
+  @property()
+  groupId: string = '-1';
+
   @property()
   entityName: string = '';
 
@@ -32,10 +35,10 @@ export class TextSearch extends LitElement {
   alias: string = '';
 
   @property()
-  include: boolean = false;
+  include: boolean | string = false;
 
   @property()
-  includeLock: boolean = false;
+  includeLock: boolean | string = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -240,7 +243,10 @@ export class TextSearch extends LitElement {
     }
   `;
 
-  protected override firstUpdated(): void {
+  connectedCallback(): void {
+    super.connectedCallback();
+    this.include= String(this.include).toLowerCase() === 'true';
+    this.includeLock= String(this.includeLock).toLowerCase() === 'true';
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
     this.condition = this.conditions[0].condition;
 
@@ -248,8 +254,12 @@ export class TextSearch extends LitElement {
       this.include = true;
       this.checked.include = true;
     }else{ // no include lock so set the include checkbox state
-      this.includeCheckbox!.checked = this.checked.include;
+      if(this.includeCheckbox)
+        this.includeCheckbox.checked = this.checked.include;
     }
+  }
+
+  protected override firstUpdated(): void {
     if(this.checked.include) this._dispatchMyEvent();
   }
 
@@ -272,6 +282,7 @@ export class TextSearch extends LitElement {
   _dispatchMyEvent(): void {
     this._setOperation();
     let evt: SearchEvent = {
+      groupId: this.groupId,
       type: SearchTypes.Text,
       entityName: this.entityName,
       from: this.from,

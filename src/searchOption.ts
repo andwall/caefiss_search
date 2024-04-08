@@ -12,6 +12,12 @@ import { CAEFISS } from "./utilities";
 */
 @customElement('search-option')
 export class OptionSearch extends LitElement {
+  
+  private static nextId = 0;
+  private optionsWrapperId = '';
+
+  @property()
+  groupId: string = '-1';
 
   @property()
   entityName: string = '';
@@ -41,14 +47,13 @@ export class OptionSearch extends LitElement {
   isMultiSelect: boolean = true;
 
   @property()
-  include: boolean = false;
+  include: boolean | string = false;
   
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private condition: Condition = Condition.NotIn;
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
   private selectedIndex: number = 0; 
-  private uniqueRef: Ref<HTMLDivElement> = createRef(); // Responsible for uniquely identifying "this" element
   private optionData: OptionSet[] = [];
   private selectedData: OptionSet[] = [];
   private isFirstVisit: boolean = true;
@@ -243,7 +248,7 @@ export class OptionSearch extends LitElement {
     }
 
     .select-btn{
-      min-width: 135px;
+      min-width: 100px;
       min-height: 37px;
       width: 100%;
       height: auto;
@@ -433,67 +438,82 @@ export class OptionSearch extends LitElement {
     }
   `;
 
+  constructor(){
+    super();
+    this.optionsWrapperId = `optionsWrapper${OptionSearch.nextId++}`
+  }
   /*
    * Function: connectedCallback
    * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and focus away event globally - closes options dropdown
   */
   override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('mousedown', e => this._globalAway(e));
-    window.addEventListener('focusin', e => this._globalAway(e));
+    window.addEventListener('click', (e) => this._handleGlobalClick(e));
+
+    this.include= String(this.include).toLowerCase() === 'true';
+    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this.condition = this.conditions[0].condition;
   }
   
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('mousedown', this._globalAway);
-    window.removeEventListener('focusin', this._globalAway);
+    window.removeEventListener('click', (e) => this._handleGlobalClick(e));
   }
   
-  /* Responsible for various accessibility features and getting/setting data */ 
+  /* Responsible for various accessibility features */ 
   protected override firstUpdated(): void {
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
-    this.condition = this.conditions[0].condition;
-
-    /* If property of include checkbox is checked, dispatch event */
+    
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
 
-    /* Responsible for opening drop down when entering "enter" */
-    this.selectBtn?.addEventListener('keydown', (e) => {
-      if(e.key === "Enter" || e.code === "Space"){
-        e.preventDefault();
-        e.stopPropagation();
-        this._toggleOptions();
-      }
-      if(e.key === "Escape"){
-        e.stopPropagation();
-        if(this._isActive()) this._toggleOptions();
-      }
+    this.addEventListener('focusout', (e) => this._closeOptions());
+    this.selectBtn?.addEventListener('focusout', (e) => {
+      if(!this.optionsWrapper?.contains(e.relatedTarget as Node)) this._closeOptions();
     });
 
-    /* Responsible for handling keyboard events on Options dropdown */
-    this.optionsContainer?.addEventListener('keydown', (e) => {
-      if(e.key === 'ArrowUp' && this.selectedIndex > 0){
-        e.preventDefault();
-        this._focusOptionAtIndex(--this.selectedIndex);
-      }else if(e.key === 'ArrowDown' && this.selectedIndex < this.optionData.length - 1){
-        e.preventDefault();
-        this._focusOptionAtIndex(++this.selectedIndex);
-      }else if(e.key === 'Escape' && this._isActive()){ 
-        e.stopPropagation();
-        this._toggleOptions();
-      }
-    });
+    this.selectBtn?.addEventListener('keydown', (e) => this._handleKeyOnSelectBtn(e));
+    this.optionsContainer?.addEventListener('keydown', (e) => this._handleKeyOnOptions(e));
+  }
+
+  _handleGlobalClick(e: Event): void{
+    if(!this.optionsWrapper?.contains(e.composedPath()[0] as HTMLElement)) this._closeOptions();
+  }
+
+  _handleKeyOnSelectBtn(e: KeyboardEvent): void{
+    if(e.key === "Enter" || e.code === "Space"){
+      e.preventDefault();
+      e.stopPropagation();
+      this._toggleOptions();
+    }
+    if(e.key === "Escape"){
+      e.stopPropagation();
+      if(this._isActive()) this._toggleOptions();
+    }
+  }
+
+  _handleKeyOnOptions(e: KeyboardEvent): void{
+    if(e.key === 'ArrowUp' && this.selectedIndex > 0){
+      e.preventDefault();
+      this._focusOptionAtIndex(--this.selectedIndex);
+    }else if(e.key === 'ArrowDown' && this.selectedIndex < this.optionData.length - 1){
+      e.preventDefault();
+      this._focusOptionAtIndex(++this.selectedIndex);
+    }else if(e.key === 'Escape' && this._isActive()){ 
+      e.stopPropagation();
+      this._toggleOptions();
+      this.selectBtn?.focus();
+    }
   }
 
   /* Responsible for fetching Option's data */
   _getData(): void {
     try {
-      let util = new CAEFISS();
-      let data = util.getOptionSet(this.entityName, this.fieldName);
-      data.forEach((d) => {
-        if(!this.optionData.some(obj => obj.key === d.key)) this.optionData.push(d); //avoid duplicates 
-      });
+      // let util = new CAEFISS();
+      // let data = util.getOptionSet(this.entityName, this.fieldName);
+      // data.forEach((d) => {
+      //   if(!this.optionData.some(obj => obj.key === d.key)) this.optionData.push(d); //avoid duplicates 
+      // });
+      for(let i = 0; i < 12; i++) this.optionData.push({key: `Option ${i}`, value: i})
       this.statusMessageEl?.classList.remove('error-background-color');
       this.requestUpdate();
     } catch (err) {
@@ -506,6 +526,7 @@ export class OptionSearch extends LitElement {
   _dispatchMyEvent(): void {
     this._setOperation();
     let evt: SearchEvent = {
+      groupId: this.groupId,
       type: SearchTypes.Option,
       entityName: this.entityName,
       from: this.from,
@@ -577,19 +598,6 @@ export class OptionSearch extends LitElement {
     this._removeTag(event, index);
   }
 
-  /* Responsible for checking if event is happening on "this" current element and toggling options dropdown*/
-  _localAway(event: Event): void {
-    let currEl = event.target as HTMLElement;
-    if(!(this.optionsWrapper?.contains(currEl)) && this._isActive()) this._toggleOptions();
-  }
-
-  /* Responsible for toggling Options based on "tabbing" or "clicking" out of component */
-  _globalAway(event: Event): void {
-    let currEl = event.target as OptionSearch;
-    if(!(currEl.uniqueRef === this.uniqueRef))
-      if(this._isActive()) this._toggleOptions();
-  }
-  
   _toggleOptions(): void {
     this.optionsWrapper?.classList.toggle('active');
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
@@ -600,16 +608,30 @@ export class OptionSearch extends LitElement {
       }, 100);
     }
   }
+
+  _closeOptions(): void{
+    this.optionsWrapper?.classList.remove('active');
+    this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
+  }
   
   /* Resposible for focusing the option in the option drop down on arrow up/down */
   _focusOptionAtIndex(index: number): void {
+    console.log('focused index: ', index)
     const options = this.shadowRoot?.querySelectorAll('.options-list-item');
-    if(options && index >= 0 && index < options.length) 
+    if(options && index >= 0 && index < options.length){
       (options[index] as HTMLElement).focus();
+      (options[index] as HTMLElement).tabIndex = 0;
+
+      /* update previous or next elements tab index */
+      if(index - 1 >= 0)
+        (options[index - 1] as HTMLElement).tabIndex = -1;
+      if(index + 1 < options.length)
+        (options[index + 1] as HTMLElement).tabIndex = -1;
+    } 
   }
 
   _isActive(): boolean{
-   return this.optionsWrapper?.classList.contains('active') || false;
+    return this.optionsWrapper?.classList.contains('active') || false;
   }
 
   _setChecked(event: Event): void {
@@ -631,7 +653,7 @@ export class OptionSearch extends LitElement {
 
   override render(){
     return html `
-      <div ${ref(this.uniqueRef)} @click=${this._localAway} id="main-container">
+      <div id="main-container">
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
@@ -642,7 +664,7 @@ export class OptionSearch extends LitElement {
               aria-labelledby="display-name include-checkbox-label"
             />
             <label for="include-checkbox" id="include-checkbox-label"><span class="visually-hidden">Include in output</span></label>
-          </div>
+          </div><!-- End of custom checkbox -->
           <h4 id="display-name">${this.displayName}</h4>
         </div>
         
@@ -659,7 +681,7 @@ export class OptionSearch extends LitElement {
           </div>
 
           <!-- Drop down (Options) -->
-          <div class="options-wrapper">
+          <div id="${this.optionsWrapperId}" class="options-wrapper">
             <div 
               @click=${this._toggleOptions} 
               tabindex="0" 
@@ -681,9 +703,9 @@ export class OptionSearch extends LitElement {
                 ${this.optionData.map((data, index) => {
                   return html`
                     <li id="${index}" 
+                      tabindex="${index === this.selectedIndex ? 0 : -1}"
                       role="option" 
                       aria-selected="${this.selectedData.includes(data)}" 
-                      tabindex="${index === this.selectedIndex ? 0 : -1}"
                       class="options-list-item" 
                       @keydown=${(e: Event) => this._addSelectedDataOnKey(e, this.isMultiSelect)}
                       @click=${(e: Event) => this._addSelectedData(e, this.isMultiSelect)}>${data.key}

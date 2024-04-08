@@ -5,9 +5,10 @@ import { TwoOptionSearch } from './searchTwoOption'
 import { CheckboxSearch } from './searchCheckbox'
 import { OptionSearch } from './searchOption'
 import { NumberSearch } from './searchNumber';
+import { RowSearch } from './searchRow';
 import { FilterBuilder} from './FilterBuilder';
 import { CAEFISS} from './utilities';
 
-export {TextSearch, DateSearch, LookupSearch, TwoOptionSearch, CheckboxSearch, OptionSearch, NumberSearch, FilterBuilder, CAEFISS};
+export {TextSearch, DateSearch, LookupSearch, TwoOptionSearch, CheckboxSearch, OptionSearch, NumberSearch, RowSearch, FilterBuilder, CAEFISS};
 
 

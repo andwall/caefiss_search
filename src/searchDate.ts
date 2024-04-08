@@ -11,6 +11,8 @@ import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./Se
  */
 @customElement('search-date')
 export class DateSearch extends LitElement{
+  @property()
+  groupId: string = '-1';
 
   @property()
   entityName: string = '';
@@ -34,7 +36,7 @@ export class DateSearch extends LitElement{
   alias: string = '';
 
   @property()
-  include: boolean = false;
+  include: boolean | string = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -261,6 +263,7 @@ export class DateSearch extends LitElement{
   `; 
 
   protected override firstUpdated(): void {
+    this.include= String(this.include).toLowerCase() === 'true';
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
@@ -298,6 +301,7 @@ export class DateSearch extends LitElement{
     this._setOperation();
 
     let evt: SearchEvent = {
+      groupId: this.groupId,
       type: SearchTypes.Date,
       entityName: this.entityName,
       from: this.from,
