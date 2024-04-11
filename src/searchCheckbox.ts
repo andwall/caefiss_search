@@ -32,7 +32,7 @@ export class CheckboxSearch extends LitElement {
   alias: string = '';
 
   @property()
-  include: boolean = false;
+  include: string | boolean = false;
   
   @query('#include-checkbox')
   private includeCheckbox?: HTMLInputElement;
@@ -40,7 +40,7 @@ export class CheckboxSearch extends LitElement {
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private condition: Condition = Condition.Equal;
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
   private optionData: OptionSet[] = [];
   private checkedOptions: Map<number, boolean> = new Map<number, boolean>(); 
 
@@ -216,6 +216,18 @@ export class CheckboxSearch extends LitElement {
  override connectedCallback(): void {
     super.connectedCallback();
     this._getData();
+    this.include= String(this.include).toLowerCase() === 'true';    this.checked = { 
+      name: this.entityName,
+      linkname: '',
+      from: this.from,
+      alias: this.alias, 
+      include: this.include, 
+      parent: null,
+      to: this.to,
+      children: [],
+      filters: new Map<string, SearchEvent>(),
+      attrs: []
+    };
   }
   
   override disconnectedCallback(): void {
@@ -223,7 +235,7 @@ export class CheckboxSearch extends LitElement {
   }
   
   protected override firstUpdated(): void {
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this.checked = { name: this.entityName, from: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
   }

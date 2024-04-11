@@ -2,7 +2,6 @@ enum SearchTypes {
     Text = "text",
     Date = "date",
     Lookup = "lookup",
-    twoOption = "twooption",
     Checkbox = "checkbox",
     Option = "option",
     Number = "number"
@@ -48,9 +47,16 @@ type SearchEvent = {
 
 type EntityInfo = {
     name: string;
-    field: string;
+    linkname: string;
+    from: string;
     alias: string;
     include: boolean;
+    parent: EntityInfo | null;
+    to: string;
+    children: EntityInfo[];
+    filters: Map<string, SearchEvent>;
+    attrs: string[];
+
 }
 
 type OptionSet = {

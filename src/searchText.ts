@@ -32,16 +32,16 @@ export class TextSearch extends LitElement {
   alias: string = '';
 
   @property()
-  include: boolean = false;
+  include: string | boolean = false;
 
   @property()
-  includeLock: boolean = false;
+  includeLock: string | boolean = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private findText: string = '';
   private condition: Condition = Condition.Equal;
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
@@ -63,7 +63,7 @@ export class TextSearch extends LitElement {
     font-family: inherit;
     }
 
-    #main-container{
+    .main-container{
       width: 100%;
     }    
     
@@ -240,16 +240,34 @@ export class TextSearch extends LitElement {
     }
   `;
 
-  protected override firstUpdated(): void {
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.include= String(this.include).toLowerCase() === 'true';
+    this.includeLock= String(this.includeLock).toLowerCase() === 'true';
+    this.checked = { 
+      name: this.entityName,
+      linkname: '',
+      from: this.from,
+      alias: this.alias, 
+      include: this.include, 
+      parent: null,
+      to: this.to,
+      children: [],
+      filters: new Map<string, SearchEvent>(),
+      attrs: []
+    };
     this.condition = this.conditions[0].condition;
 
     if(this.includeLock){
       this.include = true;
       this.checked.include = true;
     }else{ // no include lock so set the include checkbox state
-      this.includeCheckbox!.checked = this.checked.include;
+      if(this.includeCheckbox)
+        this.includeCheckbox.checked = this.checked.include;
     }
+  }
+
+  protected override firstUpdated(): void {
     if(this.checked.include) this._dispatchMyEvent();
   }
 
@@ -304,7 +322,7 @@ export class TextSearch extends LitElement {
 
   override render(){
     return html` 
-    <div id="main-container">  
+    <div class="main-container">  
       <div class="display-name-container">
 
         <!-- Custom Checkbox -->

@@ -35,7 +35,7 @@ export class NumberSearch extends LitElement{
   alias: string = '';
 
   @property()
-  include: boolean = false;
+  include: string | boolean = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -44,7 +44,7 @@ export class NumberSearch extends LitElement{
   private number2: number | null = null;
   private min: number = 0;
   private max: number = 99;
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
   private errorBorderClass = 'error-border';
 
   /* For styling */ 
@@ -68,7 +68,10 @@ export class NumberSearch extends LitElement{
       font-family: inherit;
     } 
 
-    #main-container{
+    .main-container{
+      display: flex;
+      flex-direction: column;
+      vertical-align: baseline;
       width: 100%;
     }
 
@@ -202,6 +205,19 @@ export class NumberSearch extends LitElement{
     }
     
     /* Input Styling */
+    .wrapper{
+      display: inline-block;
+    }
+
+    .error-message-wrapper{
+      display: flex;
+    }
+
+    .error-message-wrapper p{
+      flex-grow: 1;
+      width: 0;
+    }
+
     .input-container{
       display: flex;
       gap: 2px;
@@ -211,18 +227,16 @@ export class NumberSearch extends LitElement{
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      // gap: 5px;
+      gap: 1px;
       width: 100%;
     }
 
     .dash{
-      width: 1%;
       text-align: center;
     }
     
     input[type=number]{
-      width: 49%;
-      height: min-content;
+      // height: 100%;
       padding: 6px;
       -webkit-transition: 0.15s;
       transition: 0.15s;
@@ -260,9 +274,7 @@ export class NumberSearch extends LitElement{
 
     /* Error handling */
     #error-message{
-      width: 100%;
-      height: auto;
-      font-size: 14px;
+      font-size: 12px;
       color: black;
       background-color: #ffd7d7;
       padding-left: 5px;
@@ -274,11 +286,29 @@ export class NumberSearch extends LitElement{
     }
   `; 
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.include= String(this.include).toLowerCase() === 'true';
+    this.checked = { 
+      name: this.entityName,
+      linkname: '',
+      from: this.from,
+      alias: this.alias, 
+      include: this.include, 
+      parent: null,
+      to: this.to,
+      children: [],
+      filters: new Map<string, SearchEvent>(),
+      attrs: []
+    };
+  }
+
   protected override firstUpdated(): void {
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    if(this.condition === Condition.Equal){
+      if(this.n2Input) this.n2Input.disabled = true;
+    }
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
-    this.n2Input ? this.n2Input.disabled = true : '';
   }
 
   _dispatchMyEvent(): void{
@@ -337,7 +367,7 @@ export class NumberSearch extends LitElement{
       this._isValidNum(Number(this.n2Input.value)) ? this._removeErrorBorder(this.n2Input) : this._addErrorBorder(this.n2Input);
     }
     
-    this._hasErrorBorder(this.n1Input) || this._hasErrorBorder(this.n2Input) ? this._setErrorMessage('NOTE: invalid input - will not be included in search') : this._setErrorMessage('');
+    this._hasErrorBorder(this.n1Input) || this._hasErrorBorder(this.n2Input) ? this._setErrorMessage('Invalid input - not included in search') : this._setErrorMessage('');
   }
   
   /* Responsible for setting the condition and disabling inputs per necessary */
@@ -407,7 +437,7 @@ export class NumberSearch extends LitElement{
   
   override render(){
     return html`
-      <div id="main-container">
+      <div class="main-container">
         <div class="display-name-container">
           <!-- Custom Checkbox -->
           <div class="checkbox-container">
@@ -416,27 +446,31 @@ export class NumberSearch extends LitElement{
           </div>
             <h4 id="display-name">${this.displayName}</h4>
         </div>
-      
-        <!-- Conditions & Input Container -->
-        <div class="input-container">
-          <div class="condition-wrapper">
-            <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
-            <select @change=${this._setCondition} id="condition-btn" aria-labelledby="display-name condition-label">
-              <!-- Populate conditions -->
-              ${this.conditions?.map((condition, key) => {
-                return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
-              })}
-            </select> 
-          </div>
+     
+        <div class="wrapper">
+          <!-- Conditions & Input Container -->
+          <div class="input-container">
+            <div class="condition-wrapper">
+              <label for="condition-btn" class="visually-hidden" id="condition-label">Condition</label> 
+              <select @change=${this._setCondition} id="condition-btn" aria-labelledby="display-name condition-label">
+                <!-- Populate conditions -->
+                ${this.conditions?.map((condition, key) => {
+                  return html `<option ${key === 0 ? 'selected': ''} tabindex="0" class="condition-option" value=${condition.id}>${unsafeHTML(condition.icon)}&nbsp;&nbsp;&nbsp;${condition.name}&nbsp;</option>`
+                })}
+              </select> 
+            </div>
 
-          <!-- Number Search --> 
-          <div class="number-search-wrapper">
-            <input @input=${ this._handleInput} @change=${this._handleChange} type="number" min="${this.min}" max="${this.max}" class="input" id="number1" aria-labelledby="display-name"></input>
-            <span class="dash">-</span>
-            <input @input=${ this._handleInput} @change=${this._handleChange} type="number" min="${this.min}" max="${this.max}" class="input" id="number2" aria-labelledby="display-name"></input>
+            <!-- Number Search --> 
+            <div class="number-search-wrapper">
+              <input @input=${ this._handleInput} @change=${this._handleChange} type="number" min="${this.min}" max="${this.max}" class="input" id="number1" aria-labelledby="display-name"></input>
+              <span class="dash">-</span>
+              <input @input=${ this._handleInput} @change=${this._handleChange} type="number" min="${this.min}" max="${this.max}" class="input" id="number2" aria-labelledby="display-name"></input>
+            </div>
+          </div>
+          <div class="error-message-wrapper">
+            <p id="error-message">${this.errorMessage}</p>
           </div>
         </div>
-        <p id="error-message">${this.errorMessage}</p>
       </div>
     `;
   }

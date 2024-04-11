@@ -144,10 +144,10 @@ export class CAEFISS {
     // create a view layout
     public createLayoutXml(entityId : string, fields : string[]) : string {
       var layoutXml : string = `
-          <grid name='resultset' object='112' jump='name' select='1' preview='1' icon='1'>
+          <grid name='resultset' object='112' jump='0' select='1' preview='1' icon='1'>
               <row name='result' id='${entityId}'>`;
       fields.forEach(function(attr) : void {
-          layoutXml += `<cell name='${attr}' width='100' /> `;
+          layoutXml += `<cell name='${attr}' width='150' /> `;
       });
       layoutXml += `</row></grid>`;
       return layoutXml;
