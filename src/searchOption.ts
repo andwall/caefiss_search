@@ -47,7 +47,13 @@ export class OptionSearch extends LitElement {
   isMultiSelect: boolean = true;
 
   @property()
-  include: boolean | string = false;
+  include: boolean | string = false;  
+  
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
   
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -65,6 +71,8 @@ export class OptionSearch extends LitElement {
   @query('.select-btn') private selectBtn?: HTMLElement;
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
   @query('#status-message') private statusMessageEl?: HTMLLIElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "in", name: "in", icon: "&ni;", condition: Condition.In},
@@ -472,7 +480,16 @@ export class OptionSearch extends LitElement {
     });
 
     this.selectBtn?.addEventListener('keydown', (e) => this._handleKeyOnSelectBtn(e));
-    this.optionsContainer?.addEventListener('keydown', (e) => this._handleKeyOnOptions(e));
+    this.optionsContainer?.addEventListener('keydown', (e) => this._handleKeyOnOptions(e));    
+    
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }
   }
 
   _handleGlobalClick(e: Event): void{

@@ -54,6 +54,9 @@ export class LookupSearch extends LitElement {
 
   @property()
   hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
  
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -75,6 +78,7 @@ export class LookupSearch extends LitElement {
   @query('.select-btn') private selectBtn?: HTMLElement;
   @query('#status-message') private statusMessageEl?: HTMLLIElement;
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
   @query('#display-name') private displayNameEl?: HTMLElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
@@ -516,9 +520,14 @@ export class LookupSearch extends LitElement {
 
     this.selectBtn?.addEventListener('keydown', e => this._handleKeyOnSelectBtn(e));
     this.lookupOptionsContainer?.addEventListener('keydown', e => this._handleKeyOnLookup(e)); 
-    
+   
+    /* Check for hiding elements */
     if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
       this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
     }
   }
 

@@ -38,6 +38,12 @@ export class DateSearch extends LitElement{
   @property()
   include: boolean | string = false;
 
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
+
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private findText: string = '';
@@ -49,8 +55,9 @@ export class DateSearch extends LitElement{
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
 
   /* For styling */ 
-  @query('#include-checkbox')
-  private includeCheckbox?: HTMLInputElement;
+  @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "on", name: "on", icon: "&#9737;", condition: Condition.On },
     { id: "between", name: "between", icon: "&harr;", condition: Condition.Between },
@@ -266,7 +273,16 @@ export class DateSearch extends LitElement{
     this.include= String(this.include).toLowerCase() === 'true';
     this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
     this.includeCheckbox!.checked = this.checked.include;
-    if(this.checked.include) this._dispatchMyEvent();
+    if(this.checked.include) this._dispatchMyEvent();    
+    
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }
   }
   
   _setDate(event: Event): void{

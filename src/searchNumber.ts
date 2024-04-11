@@ -38,7 +38,13 @@ export class NumberSearch extends LitElement{
   alias: string = '';
 
   @property()
-  include: boolean | string = false;
+  include: boolean | string = false;  
+  
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -54,6 +60,8 @@ export class NumberSearch extends LitElement{
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
   @query('#number1') private n1Input?: HTMLInputElement;
   @query('#number2') private n2Input?: HTMLInputElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
   @state() private errorMessage: string = "";
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
@@ -301,7 +309,16 @@ export class NumberSearch extends LitElement{
       if(this.n2Input) this.n2Input.disabled = true;
     }
     this.includeCheckbox!.checked = this.checked.include;
-    if(this.checked.include) this._dispatchMyEvent();
+    if(this.checked.include) this._dispatchMyEvent();  
+    
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }
   }
 
   _dispatchMyEvent(): void{

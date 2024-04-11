@@ -1,9 +1,8 @@
-import { LitElement, PropertyValueMap, TemplateResult, css, html, unsafeCSS } from "lit";
-import { customElement, property, query, state } from "lit/decorators.js";
+import { LitElement, TemplateResult, css, html } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
 import { ComponentType, EntityInfo, SearchEvent, SearchEventTypes, SearchTypes } from "./SearchTypes"
-import { DateSearch, TextSearch, LookupSearch, OptionSearch, NumberSearch}  from "./components"
+// import { DateSearch, TextSearch, LookupSearch, OptionSearch, NumberSearch}  from "./components"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { templateContent } from "lit/directives/template-content.js";
 
 
 @customElement('search-table')
@@ -14,10 +13,8 @@ export class TableSearch extends LitElement{
 
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
   private parsedComponents: ComponentType[] = [];
-  // private rowTemplate: TemplateResult = html `<div></div>`;
   private logicGate: string = '';
   private logicGates: string[] = ['OR', 'AND'];
-  private includeEntireTable: boolean = false;
   private nextGroupId: number = 0;
 
   @state() rowTemplates: TemplateResult[] = [];
@@ -51,7 +48,7 @@ export class TableSearch extends LitElement{
     
     .section-name{
       font-weight: normal;
-      font-size: 18px;
+      // font-size: 18px;
       color: #2572b4;
     }
 
@@ -96,10 +93,14 @@ export class TableSearch extends LitElement{
       cursor: pointer;
     }
 
-    #section-name{
-      font-size: 20px;
+    .delete-row-td{
+      vertical-align: middle;
     }
-    
+
+    .delete-row-btn:hover{
+      color: red;
+    }
+
     .section-header, .section-logic-gate, .section-include-checkbox{
       display: flex;
       align-items: center; 
@@ -214,11 +215,11 @@ export class TableSearch extends LitElement{
       border: 3px solid #66afe9 !important;
     } 
 
-    /* Table styling */
+    /* Table styling - Using bootstrap */
     table{
       // width: 100%;
       // border-collapse: collapse;
-      box-shadow: 0 0px 10px rgba(102,175,233,.10);
+      box-shadow: 0 0px 10px rgba(102,175,233,.10);  
       // margin: 5px;
     }
 
@@ -251,8 +252,13 @@ export class TableSearch extends LitElement{
     //   flex-grow: 1;
     //   width: 100%;
     // }
-  `;
 
+    .tbl-wrapper {
+      overflow-x: auto; /* Enable horizontal scrolling */
+      position: relative; /* Ensure relative positioning for absolute positioning of dropdown */
+      height: auto;
+    }
+  `;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -265,13 +271,12 @@ export class TableSearch extends LitElement{
   }  
   
   protected firstUpdated(): void {
-    //attach event listeners for each type of search event
+    /* Attach event listeners for each type of search event */
     for(let eventType of Object.values(SearchEventTypes)){
       this.shadowRoot?.addEventListener(eventType, (e: Event) => {
         this._handleCustomEvent(e as CustomEvent);
       });
     }
-
     this.logicGate = this.logicGates[0];
   }
   
@@ -309,27 +314,20 @@ export class TableSearch extends LitElement{
     })
   }
 
-  // _generateTable(components: ComponentType[]): void {
-  //   let mainContentContainer = this.shadowRoot?.querySelector('.component-main-container');
-  //   let table = document.createElement('table');
-  //   let row = document.createElement('tr');
-  //   for(let i = 0; i < components.length; ++i){
-  //     let th = document.createElement('th');
-  //     th.innerHTML = components[i].displayName;
-  //     row.append(th);
-  //   }
-  //   table.append(row);
-  //   mainContentContainer?.append(table);
-  // }
 
   _generateRow(components: ComponentType[]): TemplateResult{
     let currGroupId = this.nextGroupId++;
     let groupId = `${this.entityName}-group${currGroupId}` 
-    console.log('generating row: ', groupId)
 
     let row = html `
       <tr class="tbl-row" id=${groupId}>
-        <td class="tbl-data"><button aria-label="Row ${groupId} delete button" class='btn' @click=${(e: Event) => this._deleteRow(e, groupId)}>&#x1F5d1;</button></td>
+        <td class="tbl-data delete-row-td">
+          <button 
+            aria-label="Row ${groupId} delete button" 
+            class='btn delete-row-btn' 
+            @click=${(e: Event) => this._deleteRow(e, groupId)}
+          >&times;</button>
+        </td>
         ${components.map((component, index) => {
           return html `
             <td class="tbl-data">${this._generateComponent(component, groupId)}</td> 
@@ -337,7 +335,6 @@ export class TableSearch extends LitElement{
         })}
       </tr>
     `;
-    console.log(row)
     return row;
   }
 
@@ -346,6 +343,7 @@ export class TableSearch extends LitElement{
       <div class='component'>
        ${unsafeHTML(`<search-${component.type.toString().toLowerCase()} 
         hideDisplayName='true'
+        hideIncludeCheckbox='true'
         id='${component.id}'
         groupId='${groupId}'
         displayName='${component.displayName}'
@@ -377,38 +375,24 @@ export class TableSearch extends LitElement{
   }
 
   _handleCustomEvent(e: CustomEvent<SearchEvent>){
-    let groupId = e.detail.groupId.toString();
-    let details = e.detail; //detail of the component
-    let component = e.detail.displayName;
-    // console.log('Group Id: ', groupId)
-    // console.log('details: ', details)
-    // console.log('Component: ', component)
+    const groupId = e.detail.groupId.toString();
+    const details = e.detail; //detail of the component
+    const component = e.detail.displayName;
+
     if(!this.rowData.get(groupId)){
       this.rowData.set(groupId, new Map<string, object>);
     }
     this.rowData.get(groupId)?.set(component, details)
-    // console.log(this.rowData);
-    // this.rowData.set(groupId);
     this._dispatchMyEvent();
   }
   
   /* Responsible for checking if a component is a valid component and component type */
   _isSearchType(component: unknown): component is SearchTypes{
-    let currComponentType = (component as ComponentType).type.toLowerCase();
+    const currComponentType = (component as ComponentType).type.toLowerCase();
 
-    if(!isNaN(Number(currComponentType))){
-      console.log(`Search type is a number`);
-      return false;
-    }
-    if(currComponentType === undefined ){
-      console.log(`Search type is undefined`)
-      return false;
-    }
-
-    if(!(Object.values(SearchTypes) as string[]).includes(currComponentType)){
-      console.log(`search type dos not contain ${currComponentType}`)
-      return false;
-    }
+    if(!isNaN(Number(currComponentType))) return false;
+    if(currComponentType === undefined ) return false;
+    if(!(Object.values(SearchTypes) as string[]).includes(currComponentType)) return false;
 
     return true;
   }
@@ -428,65 +412,69 @@ export class TableSearch extends LitElement{
 
   override render(){
     return html `
-      <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"> -->
+      <!-- Using Bootstrap table -->
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
       <div class="main-container">
-        <h4 class="section-name">${this.displayName}</h4>
-        <div class="section-header">
-          <div class="section-include-checkbox">
-            <p>Include entire table</p>
-            <!-- Custom Checkbox -->
-            <div class="checkbox-container">
-              <input 
-                @click=${this._setChecked} 
-                type="checkbox" 
-                id="include-checkbox" 
-                aria-labelledby="display-name include-checkbox-label"
-              />
-              <label for="include-checkbox" id="include-checkbox-label"><span class="visually-hidden">Include in output</span></label>
-            </div><!-- End of custom checkbox -->
+
+        <!-- Section name -->
+        <div class="row">
+          <div class="col-sm-12">
+            <h4 class="section-name">${this.displayName}</h4>
           </div>
-          <div class="section-logic-gate">
-            <p>Table Row Condition</p>
-            <select @change=${(e:Event) => this._setLogicGate(e)}>
-            ${this.logicGates.map((gate) => {
-              return html `<option>${gate}</option>`;
-            })}
-            </select>
+        </div>  
+
+        <!-- Table options -->
+        <div class="d-flex gap-3 pt-1 pb-1">
+          <div class="form-check form-switch form-check-reverse">
+            <input @click=${this._setChecked} class="form-check-input" type="checkbox" id="includeEntireTableCheck">
+            <label class="form-check-label fw-bold" for="includeEntireTableCheck">Include entire table</label>
+          </div>
+          
+          <div class="section-header">
+            <div class="d-flex align-items-center section-logic-gate">
+              <p class="m-0 fw-bold">Table Row Condition</p>
+              <select @change=${(e:Event) => this._setLogicGate(e)}>
+              ${this.logicGates.map((gate) => {
+                return html `<option>${gate}</option>`;
+              })}
+              </select>
+            </div>
           </div>
         </div>
-      <button @click=${this._addRow} id="addSearchRowBtn" class="btn btn-primary">&CirclePlus;&nbsp;Add</button>
-      <button @click=${this._deleteRow} id="removeSearchRowBtn" class="btn btn-primary">&CircleMinus;&nbsp;Delete</button>
-      <button @click=${this._dispatchMyEvent} id="" class="btn btn-primary">Dispatch event</button>
-        <div class="component-main-container">
-          <div class="table-responsive tbl-wrapper">
-
-            <table class="table">
-              <thead>
-                <tr class="tbl-header-row">
-                  <th class="tbl-header"></th>
-                  ${this.parsedComponents.map((component => {
-                    return html `
-                      <th scope="col" class="">${component.displayName}</th> 
-                    `
-                  }))}
-                </tr>
-              </thead>
-              <tbody>
-                ${this.rowTemplates.map(template=> {
-                  return html`
-                    ${template} 
-                  `
-                })}
-              </tbody>
-            </table>
-            <!-- <div class="tbl-mirror"><div></div></div> -->
+           
+        <!-- Table operations -->
+        <div class="row pb-2">
+          <div class="col-sm-12">
+            <button @click=${this._addRow} id="addSearchRowBtn" class="btn btn-primary"><!--&CirclePlus;&nbsp;-->Add&nbsp;&plus;</button>
+            <!-- <button @click=${this._deleteRow} id="removeSearchRowBtn" class="btn btn-primary">&CircleMinus;&nbsp;Delete</button> -->
+            <!-- <button @click=${this._dispatchMyEvent} id="" class="btn btn-primary">Dispatch event</button> -->
           </div>
+        </div>
+
+        <!-- Main table -->
+        <div class="tbl-wrapper">
+          <table class="table table-bordered mb-5">
+            <thead class="table-light">
+              <tr class="tbl-header-row">
+                <th class="tbl-header"></th>
+                ${this.parsedComponents.map((component => {
+                  return html `
+                    <th scope="col" class="">${component.displayName}</th> 
+                  `
+                }))}
+              </tr>
+            </thead>
+            <tbody>
+              ${this.rowTemplates.map(template=> {
+                return html`
+                  ${template} 
+                `
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
-    
-    `
+    `;
   }
 }

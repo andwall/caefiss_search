@@ -38,14 +38,22 @@ export class TextSearch extends LitElement {
   include: boolean | string = false;
 
   @property()
-  includeLock: boolean | string = false;
+  includeLock: boolean | string = false;  
+  
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private findText: string = '';
   private condition: Condition = Condition.Equal;
   private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
-  @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
+  @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;  
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "beginsWith", name: "begins with", icon: "A..", condition: Condition.BeginsWith },
@@ -260,7 +268,16 @@ export class TextSearch extends LitElement {
   }
 
   protected override firstUpdated(): void {
-    if(this.checked.include) this._dispatchMyEvent();
+    if(this.checked.include) this._dispatchMyEvent();    
+    
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }
   }
 
   _setFindText(event: Event): void {
