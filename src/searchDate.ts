@@ -51,6 +51,7 @@ export class DateSearch extends LitElement{
   @property()
   wrapped: boolean | string = false;
 
+
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private findText: string = '';
@@ -309,7 +310,6 @@ export class DateSearch extends LitElement{
   }
 
   protected override firstUpdated(): void {
-  
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();    
     

@@ -54,7 +54,7 @@ export class TextSearch extends LitElement {
   private findText: string = '';
   private condition: Condition = Condition.Equal;
   private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
-  
+
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
   @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
   @query('#display-name') private displayNameEl?: HTMLElement;

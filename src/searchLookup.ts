@@ -14,7 +14,7 @@ export class LookupSearch extends LitElement {
   
   private static nextId = 0;
   private lookupWrapperId = '';
-
+  
   @property() 
   groupId: string = '-1';
 
@@ -56,6 +56,7 @@ export class LookupSearch extends LitElement {
 
   @property()
   hideIncludeCheckbox: boolean | string = false;
+
   
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -499,8 +500,7 @@ export class LookupSearch extends LitElement {
 
     this.include = String(this.include).toLowerCase() === 'true';
     this.checked = { name: this.entityName, linkname: '', from: this.from, alias: this.alias, include: this.include, parent: null, to: this.to, children: [], filters: new Map<string, SearchEvent>(), attrs: []};
-    this.condition = this.conditions[0].condition;     
-    
+    this.condition = this.conditions[0].condition;
     this.includeLock = String(this.includeLock).toLowerCase() === 'true';
     if(this.includeLock){
       this.include = true;
@@ -536,6 +536,25 @@ export class LookupSearch extends LitElement {
     
     if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
       this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }
+  }
+
+  _handleGlobalClick(e: Event): void{
+    if(!this.lookupWrapper?.contains(e.composedPath()[0] as HTMLElement))
+      this._closeLookup();
+  }
+
+  _handleKeyOnLookup(e: KeyboardEvent): void{
+    if(e.key === 'ArrowUp' && this.selectedIndex > 0){
+      e.preventDefault();
+      this._focusOptionAtIndex(--this.selectedIndex);
+    }else if(e.key === 'ArrowDown' && this.selectedIndex < this.filterData.length - 1){
+      e.preventDefault();
+      this._focusOptionAtIndex(++this.selectedIndex);
+    }else if(e.key === 'Escape' && this._isActive()){ 
+      e.stopPropagation();
+      this._toggleLookup();
+      this.selectBtn?.focus();
     }
   }
 

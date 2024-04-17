@@ -524,6 +524,7 @@ export class OptionSearch extends LitElement {
     if(this.wrapped === 'true' || this.wrapped === true){
       this.inputContainer?.classList.add('input-container-wrapped');
     }
+
   }
 
    _handleGlobalClick(e: Event): void{
