@@ -5,7 +5,17 @@ enum SearchTypes {
     Checkbox = "checkbox",
     Option = "option",
     Number = "number"
-}
+};
+
+enum SearchEventTypes {
+    Text = "search-text-event",
+    Date = "search-date-event",
+    Lookup = "search-lookup-event",
+    Checkbox = "search-checkbox-event",
+    Option = "search-option-event",
+    Number = "search-number-event",
+    Row = "search-row-event",
+};
 
 enum Operation {
     Delete = 1,
@@ -28,6 +38,7 @@ enum Condition {
 };
  
 type SearchEvent = {
+    groupId: string | number,
     type: SearchTypes;
     parentEntityName: string;
     parentEntityId: string;
@@ -64,4 +75,26 @@ type OptionSet = {
     value: number;
 }
 
-export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo, OptionSet};
+/* Defines a components properties */
+type ComponentType = {
+    id: string,
+    type: SearchTypes,
+    /* Universal component props */
+    groupId: string | number,
+    displayName: string,
+    fieldName: string,
+    entityName: string,
+    parentEntityName: string,
+    parentEntityId: string,
+    from: string,
+    to: string,
+    alias: string,
+    isMultiSelect: string | boolean,
+    include: string | boolean,
+    includeLock: string | boolean,
+    hideDisplayName: string | boolean,
+    hideIncludeCheckbox: string | boolean, 
+    wrapped: string | boolean 
+};
+
+export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo, OptionSet, ComponentType, SearchEventTypes};

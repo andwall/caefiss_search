@@ -15,6 +15,9 @@ export class OptionSearch extends LitElement {
   private static nextId = 0;
   private optionsWrapperId = '';
 
+  @property() 
+  groupId: string = '-1';
+
   @property()
   entityName: string = '';
   
@@ -43,7 +46,19 @@ export class OptionSearch extends LitElement {
   isMultiSelect: boolean = true;
 
   @property()
-  include: string | boolean = false;
+  include: string | boolean = false; 
+
+  @property()
+  includeLock: string | boolean = false;
+  
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
+  
+  @property()
+  wrapped: boolean | string = false;
   
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -61,6 +76,9 @@ export class OptionSearch extends LitElement {
   @query('.select-btn') private selectBtn?: HTMLElement;
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
   @query('#status-message') private statusMessageEl?: HTMLLIElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
+  @query('.input-container') private inputContainer?: HTMLElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "in", name: "in", icon: "&ni;", condition: Condition.In},
@@ -214,6 +232,11 @@ export class OptionSearch extends LitElement {
       display: flex;
       gap: 2px;
       align-items: center;
+    }    
+    
+    .input-container-wrapped{
+      flex-direction: column;
+      align-items: start;
     }
 
     /* Condition dropdown styling */
@@ -447,8 +470,28 @@ export class OptionSearch extends LitElement {
     super.connectedCallback();
     window.addEventListener('click', (e) => this._handleGlobalClick(e));
     this.include= String(this.include).toLowerCase() === 'true'; //need to parse the truth value before dispatching event
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as unknown as EntityInfo; //TODO fix object fields
+    this.checked = { 
+      name: this.entityName, 
+      linkname: '', 
+      from: this.from, 
+      alias: this.alias, 
+      include: this.include, 
+      parent: null, 
+      to: this.to, 
+      children: [], 
+      filters: new Map<string, SearchEvent>(), 
+      attrs: []
+    };
     this.condition = this.conditions[0].condition;
+    
+    this.includeLock = String(this.includeLock).toLowerCase() === 'true';
+    if(this.includeLock){
+      this.include = true;
+      this.checked.include = true;
+    }else{ // no include lock so set the include checkbox state
+      if(this.includeCheckbox)
+        this.includeCheckbox.checked = this.checked.include;
+    }
   }
   
   override disconnectedCallback(): void {
@@ -467,7 +510,21 @@ export class OptionSearch extends LitElement {
     });
 
     this.selectBtn?.addEventListener('keydown', (e) => this._handleKeyOnSelectBtn(e));
-    this.optionsContainer?.addEventListener('keydown', (e) => this._handleKeyOnOptions(e));
+    this.optionsContainer?.addEventListener('keydown', (e) => this._handleKeyOnOptions(e));    
+    
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }    
+    
+    if(this.wrapped === 'true' || this.wrapped === true){
+      this.inputContainer?.classList.add('input-container-wrapped');
+    }
+
   }
 
    _handleGlobalClick(e: Event): void{
@@ -520,6 +577,7 @@ export class OptionSearch extends LitElement {
   _dispatchMyEvent(): void {
     this._setOperation();
     let evt: SearchEvent = {
+      groupId: this.groupId,
       type: SearchTypes.Option,
       entityName: this.entityName,
       from: this.from,
@@ -648,15 +706,16 @@ export class OptionSearch extends LitElement {
       <div class="main-container">
         <div class="display-name-container">
           <!-- Custom Checkbox -->
-          <div class="checkbox-container">
-            <input 
-              @click=${this._setChecked} 
-              type="checkbox" 
-              id="include-checkbox" 
-              aria-labelledby="display-name include-checkbox-label"
-            />
-            <label for="include-checkbox" id="include-checkbox-label"><span class="visually-hidden">Include in output</span></label>
-          </div> <!-- End of custom checkbox -->
+          ${ !this.includeLock ? html ` <!-- Only show if there's no include lock -->
+            <div class="checkbox-container">
+              <input 
+                @click=${this._setChecked} 
+                type="checkbox" 
+                id="include-checkbox" 
+                aria-labelledby="display-name checkbox-label"/>
+              <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+            </div>` : ''
+          }
           <h4 id="display-name">${this.displayName}</h4>
         </div>
         

@@ -405,6 +405,79 @@ export class FilterBuilder {
             
                     case SearchTypes.Date:
                         switch (event.condition) {
+                            case Condition.On:
+                                if (event.findText) {
+                                    // possible there is a date from a previous between
+                                    var dates = event.findText.split(' ');
+                                    if (dates && dates.length > 0) {
+                                        xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' value='${dates[0]}' /></filter>`;
+                                    }
+                                }
+                                break;
+
+
+    private addVaccineAttributeGroup() : void {
+        var vaccine : EntityInfo|null  = this.find(this.incident, "caefiss_aefi_vaccines");
+        if (!vaccine) {
+            return;
+        }
+        var agents : EntityInfo|null  = this.find(this.incident, "caefiss_cd_immunizing_agents_mls");
+        if (!agents) {
+            return;
+        }
+
+        if ((vaccine.filters.size > 0) || agents.filters.size > 0) {
+            vaccine.attrs = ["caefiss_lot_number","caefiss_vac_dose","caefiss_vac_dosage", "caefiss_vac_dose_unit", "caefiss_vac_route", "caefiss_vac_site"];
+            agents.attrs = ["caefiss_english_value","caefiss_vac_immunizing_agent_trade_name_en","caefiss_vac_immunizing_agent_manufactureren"]; 
+        }                    
+    }
+
+    private applyFilters(filters: Map<string, SearchEvent>) : string {
+        var xml : string = '';
+        for (const [field, event] of filters.entries()) {
+            switch (event.type) {
+                case SearchTypes.Text:
+                    switch (event.condition) {
+                        case Condition.BeginsWith:
+                            xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' value='${event.findText}' /></filter>`;
+                            break;
+
+                        case Condition.EndsWith:
+                            xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' value='${event.findText}' /></filter>`;
+                            break;
+
+                        case Condition.NotEqual:
+                            break;
+
+                        case Condition.Equal:
+                            xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' value='${event.findText}' /></filter>`;
+                            break;
+
+                        case Condition.Contains:
+                            event.findText.split(',').forEach(function(txt) {
+                                xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' value='%${txt}%' /></filter>`;
+                            })
+                            
+                            break;
+
+                        case Condition.NotIn:
+                            break;
+
+                        case Condition.Null:
+                            xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' /></filter>`;
+                            break;
+
+                        case Condition.NotNull:
+                            xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' /></filter>`;
+                            break;
+
+                        default:
+                            // noop
+                    }
+                    break;
+            
+                    case SearchTypes.Date:
+                        switch (event.condition) {
                             case Condition.Equal:
                                 if (event.findText) {
                                     // possible there is a date from a previous between
@@ -440,6 +513,16 @@ export class FilterBuilder {
                 
                         case SearchTypes.Number:
                             switch (event.condition) {
+                                
+                                case Condition.On:
+                                    if (event.findText) {
+                                        var vals : object = JSON.parse(event.findText);
+                                        if (vals) {
+                                            xml += `<filter type='or'><condition attribute='${field}' operator='${event.condition}' value='${vals["number1"]}' /></filter>`;
+                                        }
+                                    }
+                                    break;
+
                                 case Condition.Equal:
                                     if (event.findText) {
                                         var vals : object = JSON.parse(event.findText);

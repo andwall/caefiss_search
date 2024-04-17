@@ -10,6 +10,9 @@ import { SearchTypes, Condition, Operation, SearchEvent, EntityInfo } from "./Se
 @customElement('search-text')
 export class TextSearch extends LitElement {
  
+  @property() 
+  groupId: string = '-1';
+
   @property()
   entityName: string = '';
 
@@ -35,14 +38,27 @@ export class TextSearch extends LitElement {
   include: string | boolean = false;
 
   @property()
-  includeLock: string | boolean = false;
+  includeLock: string | boolean = false;  
+  
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
+  
+  @property()
+  wrapped: boolean | string = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private findText: string = '';
   private condition: Condition = Condition.Equal;
   private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
+
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
+  @query('.input-container') private inputContainer?: HTMLElement;
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "beginsWith", name: "begins with", icon: "A..", condition: Condition.BeginsWith },
@@ -200,6 +216,10 @@ export class TextSearch extends LitElement {
     .input-container{
       display: flex;
       gap: 2px;
+    }    
+    
+    .input-container-wrapped{
+      flex-direction: column;
     }
     
     input[type=text]{
@@ -268,7 +288,20 @@ export class TextSearch extends LitElement {
   }
 
   protected override firstUpdated(): void {
-    if(this.checked.include) this._dispatchMyEvent();
+    if(this.checked.include) this._dispatchMyEvent();    
+    
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }    
+    
+    if(this.wrapped === 'true' || this.wrapped === true){
+      this.inputContainer?.classList.add('input-container-wrapped');
+    }
   }
 
   _setFindText(event: Event): void {
@@ -290,6 +323,7 @@ export class TextSearch extends LitElement {
   _dispatchMyEvent(): void {
     this._setOperation();
     let evt: SearchEvent = {
+      groupId: this.groupId,
       type: SearchTypes.Text,
       entityName: this.entityName,
       from: this.from,

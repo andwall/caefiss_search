@@ -13,6 +13,9 @@ import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./Se
 @customElement('search-number')
 export class NumberSearch extends LitElement{
 
+  @property() 
+  groupId: string = '-1';
+
   @property()
   entityName: string = '';
 
@@ -35,7 +38,19 @@ export class NumberSearch extends LitElement{
   alias: string = '';
 
   @property()
-  include: string | boolean = false;
+  include: string | boolean = false;    
+  
+  @property()
+  includeLock: string | boolean = false;  
+  
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
+
+  @property()
+  wrapped: boolean | string = false;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
@@ -51,6 +66,9 @@ export class NumberSearch extends LitElement{
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
   @query('#number1') private n1Input?: HTMLInputElement;
   @query('#number2') private n2Input?: HTMLInputElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
+  @query('.input-container') private inputContainer?: HTMLElement;
   @state() private errorMessage: string = "";
 
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
@@ -223,9 +241,13 @@ export class NumberSearch extends LitElement{
       gap: 2px;
     }
 
+    .input-container-wrapped{
+      flex-direction: column;
+    }
+
     .number-search-wrapper{
       display: flex;
-      flex-wrap: wrap;
+      // flex-wrap: wrap;
       align-items: center;
       gap: 1px;
       width: 100%;
@@ -300,7 +322,16 @@ export class NumberSearch extends LitElement{
       children: [],
       filters: new Map<string, SearchEvent>(),
       attrs: []
-    };
+    };    
+    
+    this.includeLock = String(this.includeLock).toLowerCase() === 'true';
+    if(this.includeLock){
+      this.include = true;
+      this.checked.include = true;
+    }else{ // no include lock so set the include checkbox state
+      if(this.includeCheckbox)
+        this.includeCheckbox.checked = this.checked.include;
+    }
   }
 
   protected override firstUpdated(): void {
@@ -308,13 +339,27 @@ export class NumberSearch extends LitElement{
       if(this.n2Input) this.n2Input.disabled = true;
     }
     this.includeCheckbox!.checked = this.checked.include;
-    if(this.checked.include) this._dispatchMyEvent();
+    if(this.checked.include) this._dispatchMyEvent();    
+    
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }
+
+    if(this.wrapped === 'true' || this.wrapped === true){
+      this.inputContainer?.classList.add('input-container-wrapped');
+    }
   }
 
   _dispatchMyEvent(): void{
     this._setOperation();
 
     let evt: SearchEvent = {
+      groupId: this.groupId,
       type: SearchTypes.Number,
       entityName: this.entityName,
       from: this.from,
@@ -440,11 +485,13 @@ export class NumberSearch extends LitElement{
       <div class="main-container">
         <div class="display-name-container">
           <!-- Custom Checkbox -->
+          ${ !this.includeLock ? html ` <!-- Only show if there's no include lock -->
           <div class="checkbox-container">
             <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
             <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
-          </div>
-            <h4 id="display-name">${this.displayName}</h4>
+          </div>` : ''
+          }
+          <h4 id="display-name">${this.displayName}</h4>
         </div>
      
         <div class="wrapper">
