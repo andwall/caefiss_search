@@ -11,7 +11,8 @@ import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./Se
  */
 @customElement('search-date')
 export class DateSearch extends LitElement{
-  @property()
+
+  @property() 
   groupId: string = '-1';
 
   @property()
@@ -36,28 +37,36 @@ export class DateSearch extends LitElement{
   alias: string = '';
 
   @property()
-  include: boolean | string = false;
-
+  include: string | boolean = false;  
+  
+  @property()
+  includeLock: string | boolean = false;  
+  
   @property()
   hideDisplayName: boolean | string = false;
 
   @property()
   hideIncludeCheckbox: boolean | string = false;
 
+  @property()
+  wrapped: boolean | string = false;
+
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private findText: string = '';
-  private condition: Condition = Condition.Equal;
+  private condition: Condition = Condition.On;
   private date1?: Date;
   private date2?: Date;
   private date1Id: string = 'date1';  
   private date2Id: string = 'date2';  
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
 
   /* For styling */ 
   @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
   @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
   @query('#display-name') private displayNameEl?: HTMLElement;
+  @query('.input-container') private inputContainer?: HTMLElement;
+
   private conditions: { id: string, name: string, icon: string, condition: Condition }[] = [
     { id: "on", name: "on", icon: "&#9737;", condition: Condition.On },
     { id: "between", name: "between", icon: "&harr;", condition: Condition.Between },
@@ -215,6 +224,10 @@ export class DateSearch extends LitElement{
     .input-container{
       display: flex;
       gap: 2px;
+    }    
+    
+    .input-container-wrapped{
+      flex-direction: column;
     }
 
     .date-search-wrapper{
@@ -269,9 +282,34 @@ export class DateSearch extends LitElement{
     }
   `; 
 
-  protected override firstUpdated(): void {
+  override connectedCallback(): void {
+    super.connectedCallback();
     this.include= String(this.include).toLowerCase() === 'true';
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this.checked = { 
+      name: this.entityName,
+      linkname: '',
+      from: this.from,
+      alias: this.alias, 
+      include: this.include, 
+      parent: null,
+      to: this.to,
+      children: [],
+      filters: new Map<string, SearchEvent>(),
+      attrs: []
+    };
+
+    this.includeLock = String(this.includeLock).toLowerCase() === 'true';
+    if(this.includeLock){
+      this.include = true;
+      this.checked.include = true;
+    }else{ // no include lock so set the include checkbox state
+      if(this.includeCheckbox)
+        this.includeCheckbox.checked = this.checked.include;
+    }
+  }
+
+  protected override firstUpdated(): void {
+  
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();    
     
@@ -282,6 +320,10 @@ export class DateSearch extends LitElement{
     
     if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
       this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }    
+    
+    if(this.wrapped === 'true' || this.wrapped === true){
+      this.inputContainer?.classList.add('input-container-wrapped');
     }
   }
   
@@ -365,11 +407,13 @@ export class DateSearch extends LitElement{
       <div id="main-container">
         <div class="display-name-container">
           <!-- Custom Checkbox -->
-          <div class="checkbox-container">
-            <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
-            <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
-          </div>
-            <h4 id="display-name">${unsafeHTML(this._formatDisplayName())}</h4>
+          ${ !this.includeLock ? html ` <!-- Only show if there's no include lock -->
+            <div class="checkbox-container">
+              <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+              <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+            </div>` : ''
+          }
+          <h4 id="display-name">${unsafeHTML(this._formatDisplayName())}</h4>
         </div>
       
         <!-- Conditions & Input Container -->
@@ -386,11 +430,25 @@ export class DateSearch extends LitElement{
 
           <!-- Date Search --> 
           <div class="date-search-wrapper">
-            <input @change=${ this._setDate } type="date" class="input" id="${this.date1Id}" aria-labelledby="display-name"></input>
+            <input 
+              @change=${ this._setDate } 
+              type="date" 
+              class="input" 
+              id="${this.date1Id}" 
+              aria-labelledby="display-name"
+              min="1822-01-01"
+              max="9999-12-31"
+            ></input>
             <span class="dash">-</span>
-            <input @change=${ this._setDate } type="date" class="input" id="${this.date2Id}" aria-labelledby="display-name"></input>
-          </div>
-        </div>
+            <input 
+              @change=${ this._setDate } 
+              type="date" 
+              class="input" 
+              id="${this.date2Id}" 
+              aria-labelledby="display-name"             
+              min="1822-01-01"
+              max="9999-12-31"
+              ></input>
       </div>
     `;
   }

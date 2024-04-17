@@ -61,8 +61,15 @@
   <hr />
   <div class="row">
     <div class="col-sm-12">
-      <h2>Search table "component"</h2>    
-      <search-table entityName="vaccine" displayName="Vaccine" id="searchRow"></search-table>
+      <h2>Search vaccine table</h2>    
+      <search-table entityName="vaccine" displayName="Vaccine" id="vaccineTable"></search-table>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-sm-12">
+      <h2>Search Medra table</h2>    
+      <search-table entityName="medra" displayName="MeDRA" id="medraTable"></search-table>
     </div>
   </div>
 
@@ -228,7 +235,18 @@
       console.log(e.composedPath())
     })
   </script>
-
-  <script type="module" src="/src/searchRowDefs.ts"></script>
+  
+  <script type="module">
+    import { SearchDefs } from './src/SearchDefs.ts';
+    globalThis.searchDefs= new SearchDefs(); 
+    let vaccineTable = document.getElementById('vaccineTable');
+    let medraTable = document.getElementById('medraTable');
+    
+   
+    console.log('Setting vaccine Table attributes', searchDefs.getVaccineComponents());
+    console.log(vaccineTable);
+    vaccineTable.setAttribute('components', JSON.stringify(searchDefs.getVaccineComponents()));
+    medraTable.setAttribute('components', JSON.stringify(searchDefs.getMedraComponents()));
+  </script>
 </body>
 </html>

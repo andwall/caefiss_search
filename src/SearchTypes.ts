@@ -2,12 +2,10 @@ enum SearchTypes {
     Text = "text",
     Date = "date",
     Lookup = "lookup",
-    twoOption = "twooption",
     Checkbox = "checkbox",
     Option = "option",
-    Number = "number",
-    Row = "row"
-}
+    Number = "number"
+};
 
 enum SearchEventTypes {
     Text = "search-text-event",
@@ -17,7 +15,7 @@ enum SearchEventTypes {
     Option = "search-option-event",
     Number = "search-number-event",
     Row = "search-row-event",
-}
+};
 
 enum Operation {
     Delete = 1,
@@ -40,7 +38,7 @@ enum Condition {
 };
  
 type SearchEvent = {
-    groupId: string;
+    groupId: string | number,
     type: SearchTypes;
     parentEntityName: string;
     parentEntityId: string;
@@ -60,9 +58,16 @@ type SearchEvent = {
 
 type EntityInfo = {
     name: string;
-    field: string;
+    linkname: string;
+    from: string;
     alias: string;
     include: boolean;
+    parent: EntityInfo | null;
+    to: string;
+    children: EntityInfo[];
+    filters: Map<string, SearchEvent>;
+    attrs: string[];
+
 }
 
 type OptionSet = {
@@ -70,11 +75,12 @@ type OptionSet = {
     value: number;
 }
 
+/* Defines a components properties */
 type ComponentType = {
-    type: SearchTypes,
     id: string,
-    groupId: string | number,
+    type: SearchTypes,
     /* Universal component props */
+    groupId: string | number,
     displayName: string,
     fieldName: string,
     entityName: string,
@@ -83,10 +89,12 @@ type ComponentType = {
     from: string,
     to: string,
     alias: string,
-    isMultiSelect: boolean,
-    include: boolean,
-    includeLock: boolean
-}
+    isMultiSelect: string | boolean,
+    include: string | boolean,
+    includeLock: string | boolean,
+    hideDisplayName: string | boolean,
+    hideIncludeCheckbox: string | boolean, 
+    wrapped: string | boolean 
+};
 
-export { SearchTypes, SearchEventTypes, Operation, Condition };
-export type { SearchEvent, EntityInfo, OptionSet, ComponentType };
+export {SearchTypes, Operation, Condition, SearchEvent, EntityInfo, OptionSet, ComponentType, SearchEventTypes};

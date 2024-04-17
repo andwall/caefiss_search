@@ -10,7 +10,7 @@ import { CAEFISS } from "./utilities";
 @customElement('search-checkbox')
 export class CheckboxSearch extends LitElement {
   
-  @property()
+  @property() 
   groupId: string = '-1';
 
   @property()
@@ -35,15 +35,29 @@ export class CheckboxSearch extends LitElement {
   alias: string = '';
 
   @property()
-  include: boolean | string = false;
+  include: string | boolean = false;  
   
-  @query('#include-checkbox')
-  private includeCheckbox?: HTMLInputElement;
+  @property()
+  includeLock: string | boolean = false;  
+
+  @property()
+  hideDisplayName: boolean | string = false;
+
+  @property()
+  hideIncludeCheckbox: boolean | string = false;
+  
+  @property()
+  wrapped: boolean | string = false;
+  
+  @query('#include-checkbox') private includeCheckbox?: HTMLInputElement;
+  @query('.checkbox-container') private includeCheckboxContainer?: HTMLInputElement;
+  @query('#display-name') private displayNameEl?: HTMLElement;
+  @query('.input-container') private inputContainer?: HTMLElement;
 
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private condition: Condition = Condition.Equal;
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
   private optionData: OptionSet[] = [];
   private checkedOptions: Map<number, boolean> = new Map<number, boolean>(); 
 
@@ -208,6 +222,10 @@ export class CheckboxSearch extends LitElement {
 
     .search-checkbox-container label{
       font-weight: bold;
+    }    
+    
+    .input-container-wrapped{
+      flex-direction: column;
     }
     
   `;
@@ -216,20 +234,57 @@ export class CheckboxSearch extends LitElement {
    * Function: connectedCallback
    * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) set all checked information given to this component 
   */
- override connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
-    this._getData(); 
-    this.include= String(this.include).toLowerCase() === 'true';
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
+    this._getData();
+    this.include = String(this.include).toLowerCase() === 'true';    
+    this.checked = { 
+      name: this.entityName,
+      linkname: '',
+      from: this.from,
+      alias: this.alias, 
+      include: this.include, 
+      parent: null,
+      to: this.to,
+      children: [],
+      filters: new Map<string, SearchEvent>(),
+      attrs: []
+    };  
+    
+    this.includeLock = String(this.includeLock).toLowerCase() === 'true';
+    if(this.includeLock){
+      this.include = true;
+      this.checked.include = true;
+    }else{ // no include lock so set the include checkbox state
+      if(this.includeCheckbox)
+        this.includeCheckbox.checked = this.checked.include;
+    }
   }
   
   override disconnectedCallback(): void {
     super.disconnectedCallback();
   }
-  
+
   protected override firstUpdated(): void {
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
+
+    /* Check for hiding elements */
+    if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
+      this.displayNameEl?.classList.add('visually-hidden');
+    }
+    
+    if(this.hideIncludeCheckbox === 'true' || this.hideIncludeCheckbox === true){
+      this.includeCheckboxContainer?.classList.add('visually-hidden');
+    }
+    
+    if(this.wrapped === 'true' || this.wrapped === true){
+      this.inputContainer?.classList.add('input-container-wrapped');
+    }    
+    
+    if(this.wrapped === 'true' || this.wrapped === true){
+      this.inputContainer?.classList.add('input-container-wrapped');
+    }
   }
 
   /* Responsible for getting option set to populate checkboxes */
@@ -307,11 +362,13 @@ export class CheckboxSearch extends LitElement {
       <div class="display-name-container">
 
         <!-- Custom Checkbox -->
-        <div class="checkbox-container">
-          <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
-          <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
-        </div>
-          <h4 id="display-name">${this.displayName}</h4>
+        ${ !this.includeLock ? html ` <!-- Only show if there's no include lock -->
+          <div class="checkbox-container">
+            <input ${this.includeLock || this.hideIncludeCheckbox ? 'disabled' : ''} @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+            <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+          </div>` : ''
+        }
+        <h4 id="display-name">${this.displayName}</h4>
       </div>
       
       <!-- Conditions & input container -->

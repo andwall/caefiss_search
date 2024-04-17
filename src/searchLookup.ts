@@ -2,7 +2,6 @@ import { LitElement, html, css, TemplateResult } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { Condition, EntityInfo, Operation, SearchEvent, SearchTypes } from "./SearchTypes";
-import { Ref, createRef, ref } from "lit/directives/ref.js";
 import { CAEFISS } from "./utilities";
 
 /*
@@ -12,11 +11,11 @@ import { CAEFISS } from "./utilities";
 */
 @customElement('search-lookup')
 export class LookupSearch extends LitElement {
-
+  
   private static nextId = 0;
   private lookupWrapperId = '';
 
-  @property()
+  @property() 
   groupId: string = '-1';
 
   @property()
@@ -41,29 +40,30 @@ export class LookupSearch extends LitElement {
   displayName: string = '';
 
   @property()
-  lookupType: string = ''; // Responsible for determing if lookup is option set or lookup data; may remove later
-
-  @property()
   alias: string = '';
   
   @property()
   isMultiSelect: boolean = false;  
   
   @property()
-  include: string | boolean = false;
-
+  include: string | boolean = false;    
+  
+  @property()
+  includeLock: string | boolean = false;  
+  
   @property()
   hideDisplayName: boolean | string = false;
 
   @property()
   hideIncludeCheckbox: boolean | string = false;
- 
+  
   private context: string = '';
   private operation: Operation = Operation.Delete;
   private condition: Condition = Condition.Equal;
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private checked: EntityInfo = { name: '', from: '', alias: '', include: false } as EntityInfo;
   private selectedIndex: number = 0; 
   private isFirstVisit: boolean = true;
+  @state() private isSearchValue: boolean = false;
   @state() private statusMessage: string = "Please wait, getting data :)";
 
   /* Holds data for lookup */
@@ -72,7 +72,6 @@ export class LookupSearch extends LitElement {
   @state() private filterData: string[] = [];
 
   /* Used for styling purposes */
-  @property({attribute: false}) private isSearchValue: boolean = false;
   @query('.lookup-wrapper') private lookupWrapper?: HTMLElement;
   @query('#lookup-options-container') private lookupOptionsContainer?: HTMLElement;
   @query('.select-btn') private selectBtn?: HTMLElement;
@@ -98,7 +97,7 @@ export class LookupSearch extends LitElement {
       font-family: inherit;
     }
 
-    #main-container{
+    .main-container{
       width: 100%;
     }    
    
@@ -266,7 +265,7 @@ export class LookupSearch extends LitElement {
     }
 
     .select-btn{
-      min-width: 75px;
+      min-width: 100px;
       min-height: 37px;
       width: 100%;
       height: auto;
@@ -490,37 +489,46 @@ export class LookupSearch extends LitElement {
     super();
     this.lookupWrapperId = `lookupWrapper${LookupSearch.nextId++}`;
   }
-
   /*
    * Function: connectedCallback
    * Purpose: After this compoonent is added to DOM, listen to events on DOM (window) to handle click away event and focus away event globally - closes lookup dropdown
   */
   override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('click', e => this._handleGlobalClick(e)); // handle click away events on document
+    window.addEventListener('click', e => this._handleGlobalClick(e)); 
+
     this.include = String(this.include).toLowerCase() === 'true';
-    this.checked = { name: this.entityName, field: this.fieldName, alias: this.alias, include: this.include } as EntityInfo;
-    this.condition = this.conditions[0].condition;
+    this.checked = { name: this.entityName, linkname: '', from: this.from, alias: this.alias, include: this.include, parent: null, to: this.to, children: [], filters: new Map<string, SearchEvent>(), attrs: []};
+    this.condition = this.conditions[0].condition;     
+    
+    this.includeLock = String(this.includeLock).toLowerCase() === 'true';
+    if(this.includeLock){
+      this.include = true;
+      this.checked.include = true;
+    }else{ // no include lock so set the include checkbox state
+      if(this.includeCheckbox)
+        this.includeCheckbox.checked = this.checked.include;
+    }
   }
   
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('click', e => this._handleGlobalClick(e));
+    window.removeEventListener('click', e => this._handleGlobalClick(e)); // handle click away events on document
   }
   
   /* Responsible for various accessibility features and getting/setting data */ 
-  override firstUpdated(): void {
+  protected override firstUpdated(): void {
     this.includeCheckbox!.checked = this.checked.include;
     if(this.checked.include) this._dispatchMyEvent();
 
-    this.addEventListener('focusout', (e) => this._closeLookup());
+    this.addEventListener('focusout', () => this._closeLookup());
     this.selectBtn?.addEventListener('focusout', (e) => {
       if(!this.lookupWrapper?.contains(e.relatedTarget as Node)) this._closeLookup();
     });
 
     this.selectBtn?.addEventListener('keydown', e => this._handleKeyOnSelectBtn(e));
-    this.lookupOptionsContainer?.addEventListener('keydown', e => this._handleKeyOnLookup(e)); 
-   
+    this.lookupOptionsContainer?.addEventListener('keydown', e => this._handleKeyOnLookup(e));
+
     /* Check for hiding elements */
     if(this.hideDisplayName === 'true' || this.hideDisplayName === true){
       this.displayNameEl?.classList.add('visually-hidden');
@@ -546,6 +554,7 @@ export class LookupSearch extends LitElement {
     }else if(e.key === 'Escape' && this._isActive()){ 
       e.stopPropagation();
       this._toggleLookup();
+      this.selectBtn?.focus();
     }
   }
 
@@ -561,16 +570,15 @@ export class LookupSearch extends LitElement {
     }
   }
 
-   /* Responsible for fetching lookup data */
+  /* Responsible for fetching lookup data */
   _getData(): void {
     let tempSet: Set<string> = new Set<string>();
     try{
-      // let util = new CAEFISS();
-      // let data = util.getLookup(this.entityName, this.fieldName);
-      // data.forEach((d) => {
-        // if(d) tempSet.add(d);
-      // });
-      for(let i = 0; i < 12; i++) tempSet.add(`Option ${i}`)
+      let util = new CAEFISS();
+      let data = util.getLookup(this.entityName, this.fieldName);
+      data.forEach((d) => {
+        if(d) tempSet.add(d);
+      });
       this.lookupData = [...tempSet];
       this.statusMessageEl?.classList.remove('error-background-color');
       this.requestUpdate();
@@ -659,12 +667,11 @@ export class LookupSearch extends LitElement {
   _toggleLookup(): void {
     this.lookupWrapper?.classList.toggle('active');
     this.selectBtn?.setAttribute('aria-expanded', this._isActive() ? 'true' : 'false');
-    console.log('First visit')
     if(this.isFirstVisit){ //lazy loading
       setTimeout(() => {
         this._getData();
         this.isFirstVisit = false;
-      }, 100);
+      }, 50);
     } 
   }
 
@@ -695,7 +702,6 @@ export class LookupSearch extends LitElement {
       if(index + 1 < options.length)
         (options[index + 1] as HTMLElement).tabIndex = -1;
     }
-
   }
 
   _isActive(): boolean{
@@ -721,12 +727,16 @@ export class LookupSearch extends LitElement {
 
   override render(){
     return html `
-      <div id="mainContent" id="main-container">
+      <div class="main-container">
         <div class="display-name-container">
-          <div class="checkbox-container">
-            <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
-            <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
-          </div>
+
+          <!-- Custom Checkbox -->
+          ${ !this.includeLock ? html ` <!-- Only show if there's no include lock -->
+            <div class="checkbox-container">
+              <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+              <label for="include-checkbox" id="checkbox-label"><span class="visually-hidden">Include in output</span></label>
+            </div>` : ''
+          }
           <h4 id="display-name">${this.displayName}</h4>
         </div>
 
@@ -750,9 +760,8 @@ export class LookupSearch extends LitElement {
        
         <!-- Drop down (lookup) -->
         <div id="${this.lookupWrapperId}" class="lookup-wrapper">
-          <div 
-            @click=${this._toggleLookup}
-            id="selectBtn-${this.displayName}"
+          <div
+            @click=${this._toggleLookup} 
             tabindex="0" 
             role="combobox" 
             class="select-btn"

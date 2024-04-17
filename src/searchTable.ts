@@ -1,7 +1,6 @@
 import { LitElement, TemplateResult, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { ComponentType, EntityInfo, SearchEvent, SearchEventTypes, SearchTypes } from "./SearchTypes"
-// import { DateSearch, TextSearch, LookupSearch, OptionSearch, NumberSearch}  from "./components"
+import { ComponentType, EntityInfo, Operation, SearchEvent, SearchEventTypes, SearchTypes } from "./SearchTypes"
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 
 
@@ -9,9 +8,21 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 export class TableSearch extends LitElement{
   @property() entityName: string = '';
   @property() displayName: string = '';
-  @property() components: string = ''; // should be a JSON representation of the component definitions
+  @property() components: string = ''; // should be a JSON representation of the array of component definitions
+  private operation: Operation = Operation.Change;
 
-  private checked: EntityInfo = { name: '', field: '', alias: '', include: false } as EntityInfo;
+  private checked: EntityInfo = { 
+    name: '',
+    linkname: '',
+    from: '', 
+    to: '',
+    alias: '', 
+    parent: null,
+    children: [],
+    include: false,
+    filters: new Map<string, SearchEvent>(),
+    attrs: [] 
+  };
   private parsedComponents: ComponentType[] = [];
   private logicGate: string = '';
   private logicGates: string[] = ['OR', 'AND'];
@@ -48,8 +59,8 @@ export class TableSearch extends LitElement{
     
     .section-name{
       font-weight: normal;
-      // font-size: 18px;
       color: #2572b4;
+      font-size: 1.25rem;
     }
 
     .component-main-container{
@@ -116,28 +127,33 @@ export class TableSearch extends LitElement{
     }
     
     /* Custom checkbox styling */
-   .checkbox-container{
-      padding-top: 0.5em;
+    .checkbox-container{
+      // padding-top: 0.5em;
     }
 
-    .checkbox-container [type="checkbox"]:not(:checked),
-    .checkbox-container [type="checkbox"]:checked {
+    .checkbox-label-text{
+      padding-left: .25rem;
+      font-weight: 500;
+    }
+
+    [type="checkbox"]:not(:checked),
+    [type="checkbox"]:checked {
       position: absolute;
       left: -9999px;
     }
 
-    .checkbox-container [type="checkbox"]:not(:checked) + label,
-    .checkbox-container [type="checkbox"]:checked + label {
+    [type="checkbox"]:not(:checked) + label,
+    [type="checkbox"]:checked + label {
       position: relative;
       padding-left: 1em;
       cursor: pointer;
     }
 
     /* checkbox aspect */
-    .checkbox-container [type="checkbox"]:not(:checked) + label:before{
+    [type="checkbox"]:not(:checked) + label:before{
       content: '';
       position: absolute;
-      left: 0; top: 0;
+      left: 0; top: 0.25rem;
       width: 0.65em; height: 0.65em;
       border: 3px solid #1e1e1e;
       background: #fff;
@@ -145,10 +161,10 @@ export class TableSearch extends LitElement{
       box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
     }
 
-    .checkbox-container [type="checkbox"]:checked + label:before{
+    [type="checkbox"]:checked + label:before{
       content: '';
       position: absolute;
-      left: 0; top: 0;
+      left: 0; top: 0.25rem;
       width: 0.65em; height: 0.65em;
       border: 3px solid green;
       background: #fff;
@@ -157,12 +173,12 @@ export class TableSearch extends LitElement{
     } 
     
     /* checked mark aspect */
-    .checkbox-container [type="checkbox"]:not(:checked) + label::after,
-    .checkbox-container [type="checkbox"]:checked + label::after {
+    [type="checkbox"]:not(:checked) + label::after,
+    [type="checkbox"]:checked + label::after {
       // content: '✔';
       content: "✓";
       position: absolute;
-      top: -0.1em;
+      top: 0.2rem;
       left: 0.2em;
       font-weight: 900;
       font-size: 1em;
@@ -170,108 +186,102 @@ export class TableSearch extends LitElement{
       color: green;
       transition: all 0.2s ease-in-out 0s;
     }
-
+    
     /* checked mark aspect changes */
-    .checkbox-container [type="checkbox"]:not(:checked) + label:after {
+    [type="checkbox"]:not(:checked) + label:after {
       opacity: 0;
       transform: scale(0);
     }
 
-    .checkbox-container [type="checkbox"]:checked + label:after {
+    [type="checkbox"]:checked + label:after {
       opacity: 1;
       transform: scale(1);
     }
 
     /* disabled checkbox */
-    .checkbox-container [type="checkbox"]:disabled:not(:checked) + label:before,
-    .checkbox-container [type="checkbox"]:disabled:checked + label:before {
+    [type="checkbox"]:disabled:not(:checked) + label:before,
+    [type="checkbox"]:disabled:checked + label:before {
       box-shadow: none;
       border-color: #bbb;
       background-color: #ddd;
     }
 
-    .checkbox-container [type="checkbox"]:disabled:checked + label:after {
+    [type="checkbox"]:disabled:checked + label:after {
       color: #999;
     }
-    
-    .checkbox-container [type="checkbox"]:disabled + label {
+
+    [type="checkbox"]:disabled + label {
       color: #aaa;
     }
-    
+
     /* accessibility */
-    .checkbox-container [type="checkbox"]:not(:checked):focus + label:before {
+    [type="checkbox"]:not(:checked):focus + label:before {
       // border: 3px solid #0535d2;
       border: 3px solid #66afe9;
     }    
     
-    .checkbox-container [type="checkbox"]:checked:focus + label:before {
+    [type="checkbox"]:checked:focus + label:before {
       // border: 3px solid #0535d2;
       border: 3px solid #66afe9;
     }
-    
-    /* hover style just for information */
-    .checkbox-container label:hover:before {
-      // border: 3px solid #0535d2!important;
-      border: 3px solid #66afe9 !important;
-    } 
 
-    /* Table styling - Using bootstrap */
-    table{
-      // width: 100%;
-      // border-collapse: collapse;
-      box-shadow: 0 0px 10px rgba(102,175,233,.10);  
-      // margin: 5px;
-    }
-
-    // .tbl-wrapper{
-    //   display: flex;
-    //   flex-direction: column;
-    //   overflow-x: scroll;
-    //   height: 100%;
-    // }
-
-    // table, th, td{
-    //   border: 1px solid lightgray;
-    //   border-radius: 6px;
-    // }
-
-    // thead{
-    //   background-color: rgb(240, 240, 240); 
-    // }
-
-    // th, td{
-    //   padding: 5px;
-    // }
-   
-    // .tbl-mirror{
-    //   display: flex;
-    //   overflow-x: scroll;
-    // }
-    
-    // .tbl-mirror div {
-    //   flex-grow: 1;
-    //   width: 100%;
-    // }
+    /* Table styling */
 
     .tbl-wrapper {
-      overflow-x: auto; /* Enable horizontal scrolling */
+      // overflow-x: auto; /* Enable horizontal scrolling */
       position: relative; /* Ensure relative positioning for absolute positioning of dropdown */
       height: auto;
     }
+
+    /* Table styling - Native */ 
+    .caefiss-tbl-options{
+      display: flex;
+      gap: 0.616rem;
+      padding: .25rem 0;
+    }
+  
+    .caefiss-tbl-operations-container{
+      padding-bottom: .25rem;
+    }
+    
+    .caefiss-tbl-wrapper {
+      // overflow-x: auto; /* Enable horizontal scrolling */
+      position: relative; /* Ensure relative positioning for absolute positioning of dropdown */
+      height: auto;
+      padding-bottom: 1.5rem;
+    }
+
+    .caefiss-tbl, .caefiss-th, .caefiss-td{
+      border: solid 1px lightgray;
+    }
+
+    .caefiss-th, .caefiss-td{
+      padding: 0.313rem;
+    }
+
+    .caefiss-tbl{
+      box-shadow: 0 0px 10px rgba(102,175,233,.175);  
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .caefiss-th{
+      background-color: #f0f0f0;
+    }
   `;
 
-  connectedCallback(): void {
+  override connectedCallback(): void {
     super.connectedCallback();
-    window.addEventListener('DOMContentLoaded', () => this._initComponents()) //wait till all the content loads before parsing
   }
 
-  disconnectedCallback(): void {
+  override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('DOMContentLoaded', () => this._initComponents()) //wait till all the content loads before parsing
+    window.removeEventListener('load', this._initComponents)
   }  
   
-  protected firstUpdated(): void {
+  protected override firstUpdated(): void {
     /* Attach event listeners for each type of search event */
+    window.addEventListener('load', () => this._initComponents()) //wait till all the content loads before parsing
     for(let eventType of Object.values(SearchEventTypes)){
       this.shadowRoot?.addEventListener(eventType, (e: Event) => {
         this._handleCustomEvent(e as CustomEvent);
@@ -285,10 +295,11 @@ export class TableSearch extends LitElement{
       entityName: this.entityName,
       logicGate: this.logicGate,
       checked: this.checked,
+      operaton: this.operation,
       rows: this.rowData
     }
      
-    let searchChangeEvent = new CustomEvent('search-row-event', {
+    let searchChangeEvent = new CustomEvent('search-table-event', {
       detail: evt,
       bubbles: true,
       composed: true 
@@ -300,6 +311,7 @@ export class TableSearch extends LitElement{
     this._parseComponents();
   }
 
+  /* Responsible for parsing all the passed components - checks if each component is a valid search type */
   _parseComponents(): void{
     let currComponents: unknown = JSON.parse(this.components);
     if(!Array.isArray(currComponents)){
@@ -310,27 +322,26 @@ export class TableSearch extends LitElement{
     // If an object is a search type, add it to the parsed array, else don't
     (currComponents as ComponentType[]).forEach((component) => {
       if(this._isSearchType(component)) this.parsedComponents.push(component as ComponentType);
-      else console.log(`Did not add component with search type ${component.type} and display name: ${component.displayName}`);
+      else console.log(`Could not add component with search type ${component.type} and display name: ${component.displayName} to ${this.displayName} table`);
     })
   }
-
 
   _generateRow(components: ComponentType[]): TemplateResult{
     let currGroupId = this.nextGroupId++;
     let groupId = `${this.entityName}-group${currGroupId}` 
 
     let row = html `
-      <tr class="tbl-row" id=${groupId}>
-        <td class="tbl-data delete-row-td">
+      <tr class="caefiss-tr" id=${groupId}>
+        <td class="delete-row-td caefiss-td">
           <button 
             aria-label="Row ${groupId} delete button" 
             class='btn delete-row-btn' 
-            @click=${(e: Event) => this._deleteRow(e, groupId)}
+            @click=${() => this._deleteRow(groupId)}
           >&times;</button>
         </td>
-        ${components.map((component, index) => {
+        ${components.map((component) => {
           return html `
-            <td class="tbl-data">${this._generateComponent(component, groupId)}</td> 
+            <td class="caefiss-td">${this._generateComponent(component, groupId)}</td> 
           `
         })}
       </tr>
@@ -342,8 +353,6 @@ export class TableSearch extends LitElement{
     let comp = html `
       <div class='component'>
        ${unsafeHTML(`<search-${component.type.toString().toLowerCase()} 
-        hideDisplayName='true'
-        hideIncludeCheckbox='true'
         id='${component.id}'
         groupId='${groupId}'
         displayName='${component.displayName}'
@@ -357,6 +366,9 @@ export class TableSearch extends LitElement{
         isMultiSelect='${component.isMultiSelect}'
         include='${component.include}'
         includeLock='${component.includeLock}'
+        hideDisplayName='${component.hideDisplayName}'
+        hideIncludeCheckbox='${component.hideDisplayName}'
+        wrapped='${component.wrapped}'
       />`)}
       </div>
     `;
@@ -364,10 +376,10 @@ export class TableSearch extends LitElement{
   }
 
   _addRow(): void {
-    this.rowTemplates = [...this.rowTemplates, this._generateRow(this.parsedComponents)];
+    this.rowTemplates = [...this.rowTemplates, this._generateRow(this.parsedComponents)]; // spread operator to trigger rerender
   }
 
-  _deleteRow(e: Event, rowId: string){
+  _deleteRow(rowId: string){
     let delEl = this.shadowRoot?.getElementById(rowId);
     delEl?.remove();
     this.rowData.delete(rowId);
@@ -413,28 +425,24 @@ export class TableSearch extends LitElement{
   override render(){
     return html `
       <!-- Using Bootstrap table -->
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
       <div class="main-container">
 
         <!-- Section name -->
-        <div class="row">
-          <div class="col-sm-12">
-            <h4 class="section-name">${this.displayName}</h4>
-          </div>
+        <div class="section-name-container">
+          <h4 class="section-name">${this.displayName}</h4>
         </div>  
 
         <!-- Table options -->
-        <div class="d-flex gap-3 pt-1 pb-1">
-          <div class="form-check form-switch form-check-reverse">
-            <input @click=${this._setChecked} class="form-check-input" type="checkbox" id="includeEntireTableCheck">
-            <label class="form-check-label fw-bold" for="includeEntireTableCheck">Include entire table</label>
+        <div class="caefiss-tbl-options">
+          <div class="checkbox-container">
+            <input @click=${this._setChecked} type="checkbox" id="include-checkbox" aria-labelledby="display-name checkbox-label"/>
+            <label for="include-checkbox" id="checkbox-label"><span class="checkbox-label-text">Include entire table <span class="visually-hidden">checkbox</span></label>
           </div>
-          
+          <div class="bar">|</div> 
           <div class="section-header">
-            <div class="d-flex align-items-center section-logic-gate">
-              <p class="m-0 fw-bold">Table Row Condition</p>
-              <select @change=${(e:Event) => this._setLogicGate(e)}>
+            <div class="section-logic-gate">
+              <label id="logic-gate-label">Table Row Condition</label>
+              <select aria-labelledby="logic-gate-label" @change=${(e:Event) => this._setLogicGate(e)}>
               ${this.logicGates.map((gate) => {
                 return html `<option>${gate}</option>`;
               })}
@@ -444,23 +452,23 @@ export class TableSearch extends LitElement{
         </div>
            
         <!-- Table operations -->
-        <div class="row pb-2">
-          <div class="col-sm-12">
-            <button @click=${this._addRow} id="addSearchRowBtn" class="btn btn-primary"><!--&CirclePlus;&nbsp;-->Add&nbsp;&plus;</button>
+        <div class="caefiss-tbl-operations-container">
+          <div class="caefiss-btn-container">
+            <button aria-label="${this.displayName} table - add row button" @click=${this._addRow} id="addSearchRowBtn" class="btn btn-primary"><!--&CirclePlus;&nbsp;-->Add&nbsp;&plus;</button>
             <!-- <button @click=${this._deleteRow} id="removeSearchRowBtn" class="btn btn-primary">&CircleMinus;&nbsp;Delete</button> -->
             <!-- <button @click=${this._dispatchMyEvent} id="" class="btn btn-primary">Dispatch event</button> -->
           </div>
         </div>
 
         <!-- Main table -->
-        <div class="tbl-wrapper">
-          <table class="table table-bordered mb-5">
-            <thead class="table-light">
-              <tr class="tbl-header-row">
-                <th class="tbl-header"></th>
+        <div class="caefiss-tbl-wrapper">
+          <table class="caefiss-tbl">
+            <thead class="caefiss-thead">
+              <tr class="caefiss-tr">
+                <th class="caefiss-th"></th>
                 ${this.parsedComponents.map((component => {
                   return html `
-                    <th scope="col" class="">${component.displayName}</th> 
+                    <th scope="col" class="caefiss-th">${component.displayName}</th> 
                   `
                 }))}
               </tr>
